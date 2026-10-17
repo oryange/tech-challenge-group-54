@@ -1,0 +1,14 @@
+services:
+  medwatch:
+    build: { context: ., dockerfile: docker/Dockerfile }
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      MEDWATCH_DATA_DIR: /app/data
+      MEDWATCH_MODELS_DIR: /app/models
+      MEDWATCH_OUTPUTS_DIR: /app/outputs
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./outputs:/app/outputs
