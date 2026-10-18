@@ -18,7 +18,9 @@ def build_channels(settings: Settings) -> list[AlertChannel]:
     return channels
 
 
-def build_alert_manager(settings: Settings) -> AlertManager:
-    return AlertManager(
-        build_channels(settings), cooldown=timedelta(minutes=settings.alert_cooldown_minutes)
-    )
+def build_alert_manager(settings: Settings, event_time: bool = False) -> AlertManager:
+    """`event_time=True` mede o cooldown pelo horário dos eventos (reprocessamento histórico)."""
+    cooldown = timedelta(minutes=settings.alert_cooldown_minutes)
+    if event_time:
+        return AlertManager(build_channels(settings), cooldown=cooldown, clock=None)
+    return AlertManager(build_channels(settings), cooldown=cooldown)

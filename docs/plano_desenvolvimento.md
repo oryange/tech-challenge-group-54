@@ -94,7 +94,7 @@ Comece o PR 4 cedo: provisionar o Azure (assinatura, F0, termos de IA Responsáv
 ## PR 3 — Anomalias em sinais vitais
 
 **Código**
-- [ ] `scripts/download_datasets.py` baixa MIMIC-IV demo e/ou BIDMC, verifica checksum, idempotente
+- [ ] `medwatch data download` baixa o MIMIC-IV demo, verifica SHA-256 e é idempotente (BIDMC fica para o simulador do PR 7)
 - [ ] `anomaly/detectors.py`: `ThresholdRule`, `RobustZScore` (mediana/MAD por paciente, janela rolante), `IsolationForestDetector` (features de janela: média, desvio, slope)
 - [ ] `anomaly/vitals.py`: normaliza itemids MIMIC (HR, SBP, DBP, SpO2, RR, Temp), calcula NEWS2, emite `ClinicalEvent(source=vitals)`
 - [ ] Limiares em `configs/thresholds.yaml` com referência clínica

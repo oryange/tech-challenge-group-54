@@ -13,7 +13,7 @@ Sistema que analisa e funde dados multimodais (vídeo, áudio e texto/sinais vit
 |---|---|
 | Setup / infraestrutura (PR 1) | ✅ |
 | Core: eventos e alertas (PR 2) | ✅ |
-| Sinais vitais (PR 3) | ⏳ |
+| Sinais vitais (PR 3) | ✅ |
 | Áudio + Azure (PR 4) | ⏳ |
 | Vídeo: YOLOv8 + OpenPose (PR 5) | ⏳ |
 | Prescrições e movimentação (PR 6) | ⏳ |
@@ -107,6 +107,29 @@ Para remover tudo ao final: apague o grupo de recursos no portal (ou `az group d
 | `AZURE_SPEECH_LANGUAGE` | `pt-BR` | Idioma da transcrição |
 | `AZURE_LANGUAGE_ENDPOINT` | — | Endpoint do recurso Language |
 | `AZURE_LANGUAGE_KEY` | — | Chave do recurso Language |
+
+## Sinais vitais
+
+Detecção de anomalias em sinais vitais do **MIMIC-IV Clinical Database Demo** (PhysioNet, acesso aberto, 100 pacientes), combinando três técnicas: **NEWS2** (risco clínico absoluto), **z-score robusto** (desvio em relação ao histórico do próprio paciente) e **Isolation Forest** (combinação rara de sinais na população). Método, calibração e resultados em [docs/relatorio_vitais.md](docs/relatorio_vitais.md).
+
+```bash
+medwatch data download                               # ~6 MB, confere o SHA-256 de cada arquivo
+medwatch vitals list                                 # pacientes disponíveis (subject_id)
+medwatch vitals analyze --patient 10004235           # eventos + outputs/reports/vitals_<id>.json/.png
+medwatch vitals analyze --patient 10004235 --alert   # envia os eventos ao AlertManager
+medwatch vitals evaluate                             # precision/recall/F1 com anomalias injetadas
+```
+
+Resultado da avaliação (anomalias sintéticas injetadas em 140 internações reais, seed 42):
+
+| Método | Precision | Recall | F1 |
+|---|---|---|---|
+| z-score robusto | 0,985 | 0,714 | 0,828 |
+| Isolation Forest | 0,983 | 0,194 | 0,325 |
+| NEWS2 | 0,788 | 0,173 | 0,284 |
+| **Combinado** | **0,945** | **0,777** | **0,853** |
+
+Limiares clínicos e parâmetros dos detectores ficam em [configs/thresholds.yaml](configs/thresholds.yaml).
 
 ## Alertas
 
