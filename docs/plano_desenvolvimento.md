@@ -151,7 +151,7 @@ Comece o PR 4 cedo: provisionar o Azure (assinatura, F0, termos de IA Responsáv
 
 **Código**
 - [ ] `video/pose/keypoints.py`: esquema comum (BODY_25 ↔ COCO-17) com confiança por ponto
-- [ ] `PoseEstimator` (ABC), `YoloPoseEstimator` (padrão), `OpenPoseEstimator` (`pyopenpose` no `Dockerfile.openpose` ou leitura dos JSON do binário)
+- [ ] `PoseEstimator` (ABC), `YoloPoseEstimator` (padrão), `OpenPoseEstimator` (rede da CMU em PyTorch) e leitura dos JSON do binário oficial
 - [ ] `objects.py`: YOLOv8 com tracking (ByteTrack) e ROIs críticas em `video_rules.yaml`
 - [ ] `rules.py`: ângulos vs. faixa esperada, assimetria, compensação de tronco, queda (velocidade do quadril + razão de aspecto), invasão de ROI
 - [ ] Amostragem de frames configurável e suavização temporal dos keypoints
@@ -160,7 +160,7 @@ Comece o PR 4 cedo: provisionar o Azure (assinatura, F0, termos de IA Responsáv
 
 **Dependências / Infra**
 - [ ] Seção "Vídeo" do `requirements.txt` revisada; pesos baixados em `models/` sob demanda
-- [ ] `docker/Dockerfile.openpose` documentado
+- [ ] Decisão sobre o OpenPose registrada em ADR (OpenCV 5 sem Caffe; rede portada para PyTorch) e avisos de licença em `THIRD_PARTY_NOTICES.md`
 
 **Testes**
 - [ ] Ângulos com keypoints sintéticos (90°, 180°)
