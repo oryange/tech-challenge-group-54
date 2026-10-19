@@ -23,13 +23,16 @@ class AlertManager:
 
     Um alerta com a mesma chave (paciente + tipo) dentro do cooldown é suprimido, exceto se a
     severidade subir: escalonamento sempre passa, para a equipe não perder uma piora.
+
+    `clock=None` mede o cooldown pelo horário dos eventos em vez do relógio do sistema, para
+    reprocessar dados históricos (replay) com o mesmo comportamento do tempo real.
     """
 
     def __init__(
         self,
         channels: Sequence[AlertChannel],
         cooldown: timedelta = timedelta(minutes=15),
-        clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+        clock: Callable[[], datetime] | None = lambda: datetime.now(UTC),
     ) -> None:
         self._channels = list(channels)
         self._cooldown = cooldown
@@ -38,7 +41,7 @@ class AlertManager:
 
     async def dispatch(self, alert: Alert) -> bool:
         """Entrega o alerta. Retorna False se foi suprimido pelo cooldown."""
-        now = self._clock()
+        now = self._clock() if self._clock else max(e.timestamp for e in alert.reasons)
         last = self._last_sent.get(alert.dedup_key)
         if last is not None:
             last_at, last_severity = last

@@ -10,12 +10,16 @@ import httpx
 import typer
 from loguru import logger
 
+from medwatch.commands import data as data_commands
+from medwatch.commands import vitals as vitals_commands
 from medwatch.config import Settings, get_settings
 from medwatch.log import setup_logging
 
 app = typer.Typer(help="MedWatch - monitoramento multimodal de pacientes", no_args_is_help=True)
 alerts_app = typer.Typer(help="Alertas para a equipe médica.", no_args_is_help=True)
 app.add_typer(alerts_app, name="alerts")
+app.add_typer(data_commands.app, name="data")
+app.add_typer(vitals_commands.app, name="vitals")
 
 OPTIONAL_LIBS = {
     "lib.ultralytics": "ultralytics",

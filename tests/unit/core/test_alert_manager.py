@@ -102,3 +102,18 @@ def test_consume_filters_by_min_severity_and_counts():
     stats = asyncio.run(scenario(channel))
     assert (stats.sent, stats.suppressed, stats.ignored) == (2, 1, 1)
     assert [a.alert_type for a in channel.alerts] == ["vitals.medium", "vitals.critical"]
+
+
+def test_event_time_cooldown_for_replay():
+    """Com clock=None, o cooldown segue o horário clínico dos eventos (reprocessamento)."""
+    channel = RecordingChannel()
+    manager = AlertManager([channel], cooldown=timedelta(minutes=15), clock=None)
+    t0 = datetime(2180, 1, 1, 12, 0, tzinfo=UTC)
+
+    def at(minutes: int) -> Alert:
+        return Alert.from_event(make_event(timestamp=t0 + timedelta(minutes=minutes)))
+
+    assert asyncio.run(manager.dispatch(at(0))) is True
+    assert asyncio.run(manager.dispatch(at(10))) is False
+    assert asyncio.run(manager.dispatch(at(30))) is True
+    assert len(channel.alerts) == 2
