@@ -74,6 +74,8 @@ class IndicatorFeature(BaseModel):
 
 
 class IndicatorConfig(BaseModel):
+    """Features que compõem um indicador, com direção e peso de cada uma."""
+
     label: str
     related_terms: str | None = None
     features: dict[str, IndicatorFeature]
@@ -88,6 +90,8 @@ class IndicatorConfig(BaseModel):
 
 
 class IndicatorSeverityConfig(BaseModel):
+    """Limiares de z do indicador para low, medium e high."""
+
     low: float = 1.5
     medium: float = 2.0
     high: float = 3.0
@@ -109,6 +113,8 @@ class IndicatorSeverityConfig(BaseModel):
 
 
 class AudioConfig(BaseModel):
+    """Parâmetros do pipeline de áudio (configs/audio.yaml)."""
+
     preprocessing: PreprocessingConfig = Field(default_factory=PreprocessingConfig)
     speech: SpeechConfig = Field(default_factory=SpeechConfig)
     language: LanguageConfig = Field(default_factory=LanguageConfig)
@@ -144,6 +150,8 @@ class TermCategory(BaseModel):
 
 
 class CriticalTermsConfig(BaseModel):
+    """Dicionário de termos críticos e regras de negação (configs/critical_terms.yaml)."""
+
     negation: NegationConfig
     categories: dict[str, TermCategory]
 

@@ -40,6 +40,8 @@ class SpeechServiceError(RuntimeError):
 
 
 class Transcriber(Protocol):
+    """Contrato comum ao cliente Azure e às respostas gravadas (modo mock)."""
+
     def transcribe(self, clip: AudioClip) -> Transcript: ...
 
 

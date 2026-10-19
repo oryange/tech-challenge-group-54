@@ -44,6 +44,8 @@ class SampleScript(BaseModel):
 
 
 class SamplesConfig(BaseModel):
+    """Vozes e roteiros das consultas fictícias (configs/audio_samples.yaml)."""
+
     voices: dict[Speaker, VoiceName]
     # o nome vira o arquivo data/samples/<nome>.wav
     samples: dict[SampleName, SampleScript]
@@ -55,6 +57,7 @@ class SamplesConfig(BaseModel):
 
 
 def build_ssml(script: SampleScript, voices: dict[Speaker, str]) -> str:
+    """SSML com uma voz por falante, prosódia do paciente e pausas entre frases."""
     parts = ['<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="pt-BR">']
     for turn in script.turns:
         prosody = script.patient_prosody if turn.speaker == "paciente" else Prosody()

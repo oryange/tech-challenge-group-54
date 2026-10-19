@@ -42,10 +42,13 @@ class Token:
 
 
 def tokenize(text: str) -> list[Token]:
+    """Palavras do texto normalizado, com offsets no texto original."""
     return [Token(m.group(), m.start(), m.end()) for m in _TOKEN.finditer(normalize(text))]
 
 
 class TermMention(BaseModel):
+    """Ocorrência de um termo crítico: afirmada, negada ou em pergunta."""
+
     category: str
     term: str
     start: int
@@ -59,6 +62,8 @@ class TermMention(BaseModel):
 
 
 class CriticalTermDetector:
+    """Encontra os termos do dicionário e classifica cada menção."""
+
     def __init__(self, config: CriticalTermsConfig) -> None:
         self._config = config
         self._cues = {normalize(cue) for cue in config.negation.cues}
@@ -71,6 +76,7 @@ class CriticalTermDetector:
                     self._terms.append((name, " ".join(words), words))
 
     def detect(self, text: str, entities: Sequence[HealthEntity] = ()) -> list[TermMention]:
+        """Menções no texto; `entities` do Health complementam a negação."""
         tokens = tokenize(text)
         words = [token.text for token in tokens]
         matches: list[tuple[str, str, int, int]] = []

@@ -26,6 +26,7 @@ PATIENT_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
 
 def validate_patient_id(patient_id: str) -> str:
+    """Recusa nomes e caracteres de caminho: o id compõe o nome do relatório."""
     if not PATIENT_ID.fullmatch(patient_id):
         raise ValueError(
             "patient_id deve ser um código pseudonimizado (letras, números, - ou _), nunca o nome"
@@ -34,6 +35,8 @@ def validate_patient_id(patient_id: str) -> str:
 
 
 class AudioReport(BaseModel):
+    """Tudo o que a análise produziu; gravado em outputs/reports/audio_<id>.json."""
+
     report_id: str
     patient_id: str
     recorded_at: AwareDatetime
@@ -49,6 +52,8 @@ class AudioReport(BaseModel):
 
 
 class AudioAnalyzer:
+    """Orquestra as etapas do áudio a partir de provedores injetáveis (Azure ou mock)."""
+
     def __init__(
         self,
         config: AudioConfig,
@@ -77,6 +82,7 @@ class AudioAnalyzer:
         baseline: dict[str, FeatureStats] | None = None,
         mock: bool = False,
     ) -> AudioReport:
+        """Analisa um arquivo e devolve o relatório com os eventos clínicos."""
         validate_patient_id(patient_id)
         if recorded_at.tzinfo is None:
             raise ValueError("recorded_at precisa de fuso horário, ex.: 2026-10-19T14:30:00-03:00")
@@ -202,4 +208,5 @@ class AudioAnalyzer:
 
 
 def max_severity(events: list[ClinicalEvent]) -> Severity | None:
+    """Maior severidade entre os eventos (None se não houver eventos)."""
     return max((e.severity for e in events), default=None)

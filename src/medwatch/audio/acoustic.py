@@ -26,6 +26,8 @@ VOICE_FEATURES = (
 
 
 class AcousticFeatures(BaseModel):
+    """Features de uma consulta; `None` quando não puderam ser calculadas."""
+
     duration_seconds: float
     speech_seconds: float
     pause_count: int
@@ -116,6 +118,7 @@ def voice_features(clip: AudioClip, config: AcousticConfig) -> dict[str, float |
 def extract_features(
     clip: AudioClip, config: AcousticConfig, word_count: int | None = None
 ) -> AcousticFeatures:
+    """Calcula todas as features; `word_count` (da transcrição) habilita as taxas de fala."""
     intervals = speech_intervals(clip, config)
     pauses = pause_features(intervals)
     speech_seconds = float(pauses["speech_seconds"] or 0.0)

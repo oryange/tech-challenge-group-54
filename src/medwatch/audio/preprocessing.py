@@ -57,6 +57,7 @@ def to_mono(samples: np.ndarray) -> np.ndarray:
 
 
 def resample(samples: np.ndarray, orig_sr: int, target_sr: int) -> np.ndarray:
+    """Reamostra para `target_sr` (librosa); devolve o próprio sinal se a taxa já bate."""
     if orig_sr == target_sr:
         return samples
     import librosa

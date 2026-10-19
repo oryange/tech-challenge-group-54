@@ -27,6 +27,8 @@ class FeatureScore(BaseModel):
 
 
 class IndicatorResult(BaseModel):
+    """Indicador calculado; `zscore` é None sem features suficientes."""
+
     name: str
     label: str
     zscore: float | None

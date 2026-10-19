@@ -67,6 +67,7 @@ def recording_key(path: Path) -> str:
 def build_providers(
     settings: Settings, config: AudioConfig, audio_file: Path, diarize: bool, record: bool
 ) -> tuple[Transcriber, LanguageAnalyzer]:
+    """Escolhe Azure real, Azure com gravação (--record) ou respostas gravadas (mock)."""
     key = recording_key(validate_file(audio_file, config.preprocessing))
     stt_path = recordings_dir(settings) / f"{key}.stt.json"
     language_path = recordings_dir(settings) / f"{key}.language.json"
@@ -86,6 +87,7 @@ def build_providers(
 
 
 def parse_start_time(value: str | None) -> datetime:
+    """Início da gravação em ISO 8601 com fuso; agora (UTC) se omitido."""
     if value is None:
         return datetime.now(UTC)
     try:

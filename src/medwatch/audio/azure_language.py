@@ -63,6 +63,8 @@ class SentimentResult(BaseModel):
 
 
 class HealthEntity(BaseModel):
+    """Entidade do Text Analytics for Health, com offset no texto completo."""
+
     text: str
     category: str
     subcategory: str | None = None
@@ -89,6 +91,8 @@ class ConsultationSummary(BaseModel):
 
 
 class LanguageAnalysis(BaseModel):
+    """Resultado do Azure Language para a transcrição inteira."""
+
     sentiment: SentimentResult | None = None
     key_phrases: list[str] = Field(default_factory=list)
     summary: ConsultationSummary | None = None
@@ -98,6 +102,8 @@ class LanguageAnalysis(BaseModel):
 
 
 class LanguageAnalyzer(Protocol):
+    """Contrato comum ao cliente Azure e às respostas gravadas (modo mock)."""
+
     def analyze(self, text: str) -> LanguageAnalysis: ...
 
 
@@ -144,6 +150,7 @@ def split_documents(text: str, max_chars: int) -> list[tuple[int, str]]:
 
 
 def batched(items: Sequence[T], size: int) -> Iterator[Sequence[T]]:
+    """Fatias de até `size` itens, para respeitar o limite de documentos por chamada."""
     for index in range(0, len(items), size):
         yield items[index : index + size]
 
