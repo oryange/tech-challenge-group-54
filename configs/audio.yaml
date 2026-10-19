@@ -1,0 +1,88 @@
+# Análise de áudio de consultas: Azure Speech to Text + Azure AI Language + acústica local.
+# Os indicadores de fadiga, disartria e dificuldade respiratória são TRIAGEM, não diagnóstico.
+
+preprocessing:
+  sample_rate: 16000          # o Speech espera PCM 16 kHz mono, 16 bits
+  min_seconds: 3
+  max_seconds: 1800           # 30 min por consulta; o F0 do Speech dá ~5 h de áudio por mês
+  max_file_mb: 200
+  # Lidos pelo libsndfile (soundfile), sem processo externo. Gravações em .m4a precisam ser
+  # convertidas antes (ver README, seção "Áudio").
+  allowed_extensions: [".wav", ".flac", ".ogg", ".mp3"]
+
+speech:
+  timeout_seconds: 900        # tempo máximo de uma transcrição contínua
+  max_attempts: 3             # tentativas em erro transitório (429, timeout, conexão)
+  backoff_seconds: 2.0        # espera de 2 s, 4 s, ... entre as tentativas
+
+language:
+  sentiment_language: pt-BR
+  health_language: pt         # o Text Analytics for Health aceita "pt", sem variante BR
+  key_phrase_language: pt-BR
+  summary_language: pt
+  # extractive: frases da própria consulta (todas as regiões, inclusive Brazil South).
+  # abstractive: texto reescrito pelo modelo; NÃO existe em Brazil South (exige recurso em
+  # East US, North Europe, West Europe...). off: não resume.
+  summary_mode: extractive
+  summary_sentences: 3
+  max_key_phrases: 15
+  max_chars_per_document: 5000  # limite síncrono do serviço: 5.120 caracteres
+  sentiment_batch_size: 10    # limite do serviço: 10 documentos por chamada
+  key_phrase_batch_size: 10   # limite do serviço: 10 documentos por chamada
+  health_batch_size: 25       # limite do serviço: 25 documentos por chamada
+  retry_total: 3              # retry do azure-core (429/5xx, respeita Retry-After)
+  timeout_seconds: 30
+
+acoustic:
+  pitch_floor_hz: 75
+  pitch_ceiling_hz: 500
+  silence_top_db: 30          # trechos 30 dB abaixo do pico do sinal contam como silêncio
+  min_pause_seconds: 0.25     # silêncios mais curtos são coarticulação, não pausa
+
+# Referência populacional aproximada (adulto, fala conversacional). Use --baseline com uma
+# consulta anterior do mesmo paciente sempre que possível: a comparação com o próprio
+# paciente é mais confiável que esta média. Fontes: limiares do Praat para jitter (1,04%)
+# e shimmer (3,81%) em voz patológica; taxas de fala do português brasileiro conversacional.
+baseline:
+  speech_rate_wpm: {mean: 150, std: 25}
+  articulation_rate_wpm: {mean: 190, std: 30}
+  f0_std_semitones: {mean: 3.0, std: 1.0}
+  mean_pause_seconds: {mean: 0.6, std: 0.25}
+  pauses_per_minute: {mean: 12, std: 5}
+  mean_phrase_seconds: {mean: 3.0, std: 1.2}
+  jitter_local_pct: {mean: 0.5, std: 0.3}
+  shimmer_local_pct: {mean: 3.0, std: 1.2}
+  hnr_db: {mean: 18, std: 4}
+
+# direction: +1 quando valor ACIMA do baseline indica o achado; -1 quando ABAIXO.
+# O z do indicador é a média ponderada dos z orientados de cada feature, com piso 0: uma
+# feature melhor que o baseline não compensa o desvio de outra.
+indicators:
+  fatigue:
+    label: Fadiga
+    related_terms: fatigue
+    features:
+      speech_rate_wpm: {direction: -1, weight: 1.0}
+      f0_std_semitones: {direction: -1, weight: 1.0}
+      mean_pause_seconds: {direction: 1, weight: 1.0}
+  dysarthria:
+    label: Disartria
+    related_terms: neuro
+    features:
+      articulation_rate_wpm: {direction: -1, weight: 1.0}
+      jitter_local_pct: {direction: 1, weight: 1.0}
+      shimmer_local_pct: {direction: 1, weight: 1.0}
+      hnr_db: {direction: -1, weight: 0.5}
+  respiratory_distress:
+    label: Dificuldade respiratória
+    related_terms: dyspnea
+    features:
+      pauses_per_minute: {direction: 1, weight: 1.0}
+      mean_phrase_seconds: {direction: -1, weight: 1.0}
+      hnr_db: {direction: -1, weight: 0.5}
+
+# z do indicador → severidade. Termo crítico relacionado (não negado) sobe um nível, até high.
+indicator_severity:
+  low: 1.5
+  medium: 2.0
+  high: 3.0

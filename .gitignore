@@ -17,3 +17,5 @@ outputs/
 .mypy_cache/
 .ruff_cache/
 .DS_Store
+# gravações com voz real (docs/roteiro_gravacao_audio.md): a voz identifica quem gravou
+gravacoes/

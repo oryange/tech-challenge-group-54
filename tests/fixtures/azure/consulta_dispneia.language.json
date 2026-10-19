@@ -1,0 +1,264 @@
+{
+  "sentiment": {
+    "sentiment": "mixed",
+    "scores": {
+      "positive": 0.38,
+      "neutral": 0.27,
+      "negative": 0.35
+    },
+    "sentences": [
+      {
+        "text": "Bom dia. Como a senhora passou a noite?",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Bom dia, doutor.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Passei mal.",
+        "sentiment": "negative",
+        "scores": {
+          "positive": 0.05,
+          "neutral": 0.15,
+          "negative": 0.8
+        },
+        "opinions": []
+      },
+      {
+        "text": "Acordei várias vezes com falta de ar.",
+        "sentiment": "negative",
+        "scores": {
+          "positive": 0.05,
+          "neutral": 0.15,
+          "negative": 0.8
+        },
+        "opinions": []
+      },
+      {
+        "text": "Tive que dormir sentada.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "E durante o dia, como está?",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Estou muito cansada.",
+        "sentiment": "negative",
+        "scores": {
+          "positive": 0.05,
+          "neutral": 0.15,
+          "negative": 0.8
+        },
+        "opinions": []
+      },
+      {
+        "text": "Me canso só de ir até o banheiro.",
+        "sentiment": "negative",
+        "scores": {
+          "positive": 0.05,
+          "neutral": 0.15,
+          "negative": 0.8
+        },
+        "opinions": []
+      },
+      {
+        "text": "Fico sem ar no meio do caminho.",
+        "sentiment": "negative",
+        "scores": {
+          "positive": 0.05,
+          "neutral": 0.15,
+          "negative": 0.8
+        },
+        "opinions": []
+      },
+      {
+        "text": "Está sentindo dor no peito?",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Não sinto dor no peito.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "É mais esse cansaço para respirar.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Vou ajustar o oxigênio e pedir uma gasometria. Qualquer piora, chame a enfermagem.",
+        "sentiment": "negative",
+        "scores": {
+          "positive": 0.05,
+          "neutral": 0.15,
+          "negative": 0.8
+        },
+        "opinions": []
+      },
+      {
+        "text": "Está bem.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Obrigada, doutor.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      }
+    ]
+  },
+  "key_phrases": [
+    "falta de ar",
+    "dormir sentada",
+    "banheiro",
+    "meio do caminho",
+    "dor no peito",
+    "cansaço",
+    "oxigênio",
+    "gasometria"
+  ],
+  "summary": {
+    "mode": "extractive",
+    "sentences": [
+      "Acordei várias vezes com falta de ar.",
+      "Fico sem ar no meio do caminho.",
+      "Vou ajustar o oxigênio e pedir uma gasometria."
+    ]
+  },
+  "entities": [
+    {
+      "text": "falta de ar",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 94,
+      "length": 11,
+      "normalized_text": "Dyspnea",
+      "certainty": "positive"
+    },
+    {
+      "text": "cansada",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 172,
+      "length": 7,
+      "normalized_text": "Fatigue",
+      "certainty": "positive"
+    },
+    {
+      "text": "sem ar",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 220,
+      "length": 6,
+      "normalized_text": "Dyspnea",
+      "certainty": "positive"
+    },
+    {
+      "text": "dor no peito",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 261,
+      "length": 12,
+      "normalized_text": "Chest Pain",
+      "certainty": "neutralPossible"
+    },
+    {
+      "text": "dor no peito",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 285,
+      "length": 12,
+      "normalized_text": "Chest Pain",
+      "certainty": "negative"
+    },
+    {
+      "text": "cansaço para respirar",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 311,
+      "length": 21,
+      "normalized_text": "Dyspnea",
+      "certainty": "positive"
+    },
+    {
+      "text": "oxigênio",
+      "category": "TreatmentName",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 348,
+      "length": 8,
+      "normalized_text": "Oxygen therapy",
+      "certainty": null
+    },
+    {
+      "text": "gasometria",
+      "category": "ExaminationName",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 369,
+      "length": 10,
+      "normalized_text": "Blood gas analysis",
+      "certainty": null
+    }
+  ],
+  "health_available": true,
+  "errors": []
+}
