@@ -1,0 +1,111 @@
+# Regras clínicas da análise de vídeo (fisioterapia, quarto, centro cirúrgico).
+# Ângulos em graus. Métricas disponíveis: ver src/medwatch/video/metrics.py.
+
+sample_fps: 10            # quadros analisados por segundo de vídeo
+smoothing_frames: 5       # mediana móvel dos keypoints (reduz tremor do estimador)
+min_keypoint_conf: 0.3    # keypoints abaixo disso são ignorados
+min_deviation_seconds: 0.3  # um desvio precisa durar isso para virar evento (o fundo de
+                            # um agachamento dura ~0,4 s)
+
+exercises:
+  agachamento:
+    description: Agachamento bilateral (vista lateral ou posterior)
+    # a repetição começa quando a métrica cruza `enter` e termina quando volta além de `exit`
+    repetition: {metric: knee_angle_min, enter_below: 120, exit_above: 155}
+    rules:
+      - name: flexao_joelho_excessiva
+        metric: knee_angle_min
+        min: 60
+        severity: medium
+        message: Flexão de joelho além do limite seguro
+        recommendation: Limitar a profundidade a ~90° de flexão até liberação do fisioterapeuta.
+      - name: inclinacao_tronco_excessiva
+        metric: trunk_lean
+        max: 45
+        severity: medium
+        message: Inclinação anterior do tronco acima do esperado
+        recommendation: Orientar a manter o tronco mais vertical; considerar apoio anterior.
+      - name: assimetria_joelhos
+        metric: knee_asymmetry
+        max: 25
+        severity: low
+        message: Diferença de flexão entre joelhos (possível compensação/descarga de peso)
+        recommendation: Avaliar dor ou fraqueza unilateral; reforçar distribuição simétrica do peso.
+      - name: profundidade_insuficiente
+        kind: repetition
+        metric: knee_angle_min
+        target_max: 130
+        severity: low
+        message: Repetição sem atingir a amplitude prevista
+        recommendation: Verificar dor ou limitação de amplitude; ajustar meta da sessão.
+
+  agachamento_unipodal:
+    description: Agachamento em apoio unipodal (vista lateral)
+    # na vista lateral o joelho de apoio "em pé" fica ~135° (perspectiva da câmera)
+    repetition: {metric: support_knee_angle, enter_below: 110, exit_above: 125}
+    rules:
+      - name: flexao_joelho_excessiva
+        metric: support_knee_angle
+        min: 70
+        severity: medium
+        message: Flexão do joelho de apoio além do limite seguro
+        recommendation: Reduzir a profundidade do agachamento unipodal.
+      - name: inclinacao_tronco_excessiva
+        metric: trunk_lean
+        max: 40
+        severity: medium
+        message: Compensação com inclinação anterior do tronco
+        recommendation: Reduzir carga/profundidade; reforçar controle de tronco e glúteo médio.
+
+  elevacao_bracos:
+    description: Elevação bilateral dos braços (vista frontal)
+    repetition: {metric: shoulder_angle_min, enter_above: 130, exit_below: 60}
+    rules:
+      - name: assimetria_ombros
+        metric: shoulder_asymmetry
+        max: 25
+        severity: low
+        message: Diferença de elevação entre os braços
+        recommendation: Avaliar limitação de amplitude ou dor no ombro com menor elevação.
+      - name: compensacao_tronco
+        metric: trunk_lean
+        max: 15
+        severity: low
+        message: Inclinação do tronco para compensar a elevação
+        recommendation: Orientar a manter o tronco neutro; reduzir a amplitude-alvo.
+      - name: amplitude_insuficiente
+        kind: repetition
+        metric: shoulder_angle_min
+        target_min: 150
+        severity: low
+        message: Elevação abaixo da amplitude prevista
+        recommendation: Registrar amplitude atingida para acompanhamento da evolução.
+
+# Detecção de queda: descida rápida do quadril (fração da altura da pessoa em pé) seguida de
+# postura horizontal sustentada. Calibrado nas sequências 01–10 do UR Fall Dataset e validado
+# nas sequências 11–20 (ver docs/relatorio_video.md).
+fall:
+  drop_fraction: 0.25       # o quadril desce ao menos 25% da altura corporal...
+  descent_seconds: 1.0      # ...dentro de 1 s
+  lying_aspect_ratio: 1.6   # largura/altura da caixa da pessoa: deitada no chão
+  posture_frames: 3         # mediana móvel da postura (a pose oscila com a pessoa no chão)
+  window_seconds: 3.0       # tempo máximo entre a descida e a postura horizontal
+
+# Áreas críticas (coordenadas normalizadas 0–1 do quadro). Uma cena é escolhida na CLI.
+scenes:
+  quarto:
+    rois:
+      - name: area_restrita
+        polygon: [[0.0, 0.0], [0.15, 0.0], [0.15, 1.0], [0.0, 1.0]]
+        forbidden_classes: [person]
+        severity: high
+        message: Pessoa em área restrita
+  centro_cirurgico:
+    rois:
+      - name: campo_esteril
+        polygon: [[0.3, 0.3], [0.7, 0.3], [0.7, 0.8], [0.3, 0.8]]
+        forbidden_classes: [cell phone, bottle, cup]
+        severity: high
+        message: Objeto não estéril no campo cirúrgico
+    # contagem de instrumentos no início e no fim do vídeo deve bater
+    count_classes: [scissors, knife]

@@ -20,9 +20,13 @@ pandas>=3.0.0,<4.0.0
 # --- Vídeo: YOLOv8 (detecção + pose) ----------------------------------------------------
 # O ultralytics já depende do opencv-python. Não adicionar o opencv-python-headless junto:
 # os dois instalam o mesmo módulo cv2 e um sobrescreve o outro.
-# O OpenPose não é pacote pip; ele roda via docker/Dockerfile.openpose (PR 5).
+# O OpenPose roda com a rede original da CMU portada para PyTorch (src/medwatch/video/pose),
+# sem pacote pip próprio: usa só torch, scipy e opencv já declarados aqui.
 ultralytics>=8.2.0,<9.0.0
 opencv-python>=4.9.0,<6.0.0
+# lap: atribuição do rastreador ByteTrack. Sem ele o ultralytics tenta instalá-lo sozinho
+# via pip em tempo de execução, o que quebra a reprodutibilidade do ambiente.
+lap>=0.5.12,<1.0.0
 # torch é declarado explicitamente porque é a maior dependência do ambiente. Em Linux sem GPU,
 # instale com --extra-index-url https://download.pytorch.org/whl/cpu para não baixar ~5 GB
 # de wheels CUDA. No macOS o wheel padrão já é CPU/MPS.

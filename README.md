@@ -15,7 +15,7 @@ Sistema que analisa e funde dados multimodais (vídeo, áudio e texto/sinais vit
 | Core: eventos e alertas (PR 2) | ✅ |
 | Sinais vitais (PR 3) | ✅ |
 | Áudio + Azure (PR 4) | ⏳ |
-| Vídeo: YOLOv8 + OpenPose (PR 5) | ⏳ |
+| Vídeo: YOLOv8 + OpenPose (PR 5) | ✅ |
 | Prescrições e movimentação (PR 6) | ⏳ |
 | Fusão, API e Dashboard (PR 7) | ⏳ |
 | Relatório técnico e demo (PR 8) | ⏳ |
@@ -130,6 +130,32 @@ Resultado da avaliação (anomalias sintéticas injetadas em 140 internações r
 | **Combinado** | **0,945** | **0,777** | **0,853** |
 
 Limiares clínicos e parâmetros dos detectores ficam em [configs/thresholds.yaml](configs/thresholds.yaml).
+
+## Vídeo clínico
+
+Análise postural com **YOLOv8-pose** (padrão) ou **OpenPose** (rede original da CMU em PyTorch), detecção de objetos e áreas críticas com **YOLOv8 + ByteTrack**, contagem de repetições, desvios de exercício, **detecção de quedas** e relatório automático. Método e resultados em [docs/relatorio_video.md](docs/relatorio_video.md).
+
+```bash
+medwatch data download --dataset videos      # vídeos de exemplo (licença aberta)
+medwatch video analyze agachamento_unipodal.webm --exercise agachamento_unipodal
+medwatch video analyze agachamento_barra.webm --exercise agachamento --backend openpose
+medwatch video analyze urfall_queda_01.mp4 --alert          # queda → alerta CRITICAL
+medwatch video analyze meu_video.mp4 --scene quarto         # áreas críticas (ativa objetos)
+
+medwatch data download --dataset urfall      # 40 sequências do UR Fall Dataset
+medwatch video evaluate-falls                # acurácia: calibração 01–10, validação 11–20
+```
+
+Exercícios disponíveis: `agachamento`, `agachamento_unipodal` e `elevacao_bracos`. Limiares, cenas e áreas críticas ficam em [configs/video_rules.yaml](configs/video_rules.yaml). Os pesos dos modelos são baixados para `models/` no primeiro uso.
+
+Cada análise gera em `outputs/reports/video/` um relatório HTML autocontido, um JSON com os eventos, o vídeo anotado e a série de pose (`.parquet`).
+
+Detecção de quedas (UR Fall Dataset, conjunto de validação 11–20, sem ajuste de limiares):
+
+| Backend | Quedas detectadas | Alarmes falsos | Velocidade |
+|---|---|---|---|
+| YOLOv8-pose | 6/10 | 0/10 | 43–105 quadros/s |
+| OpenPose | 4/10 | 0/10 | 2–11 quadros/s |
 
 ## Alertas
 
