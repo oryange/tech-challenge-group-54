@@ -70,3 +70,13 @@ def test_ping_speech_checks_token_endpoint(azure_env, status, expected):
     assert cli._ping_speech(get_settings(), transport=httpx.MockTransport(handler)) is expected
     assert seen["url"] == "https://brazilsouth.api.cognitive.microsoft.com/sts/v1.0/issueToken"
     assert seen["key"] == "speech-key"
+
+
+def test_alerts_demo_writes_history():
+    result = runner.invoke(app, ["alerts", "demo"])
+    assert result.exit_code == 0
+    assert (
+        "Alertas enviados: 4 · suprimidos (cooldown): 1 · ignorados (< medium): 1" in result.stdout
+    )
+    history = get_settings().alerts_file.read_text(encoding="utf-8").splitlines()
+    assert len(history) == 4

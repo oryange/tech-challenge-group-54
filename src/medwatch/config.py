@@ -7,6 +7,9 @@ from typing import Literal
 from pydantic import Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from medwatch.core.alerts.channels import WebhookFormat
+from medwatch.core.events import Severity
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 ENV_FILE = PROJECT_ROOT / ".env"
 
@@ -48,11 +51,21 @@ class Settings(BaseSettings):
     yolo_detection_weights: str = "yolov8n.pt"
     yolo_pose_weights: str = "yolov8n-pose.pt"
 
+    alert_min_severity: Severity = Severity.MEDIUM
+    alert_cooldown_minutes: int = Field(default=15, ge=0)
+    # a URL do webhook carrega o token de acesso ao canal, por isso é tratada como segredo
+    alert_webhook_url: SecretStr | None = None
+    alert_webhook_format: WebhookFormat = "generic"
+
     azure: AzureSettings = Field(default_factory=AzureSettings)
 
     @property
     def logs_dir(self) -> Path:
         return self.outputs_dir / "logs"
+
+    @property
+    def alerts_file(self) -> Path:
+        return self.outputs_dir / "alerts" / "alerts.jsonl"
 
     def ensure_dirs(self) -> None:
         for path in (
