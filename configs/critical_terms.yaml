@@ -1,0 +1,80 @@
+# Termos críticos em transcrições de consulta (pt-BR).
+# A comparação é feita sem acento e em minúsculas, palavra a palavra ("Cansaço" = "cansaco").
+# Menção precedida de negação ("não tenho falta de ar") fica no relatório, mas não gera evento.
+
+negation:
+  cues: [nao, nunca, nem, sem, nenhum, nenhuma, jamais, nego, nega, negou, negam]
+  window_tokens: 4            # quantas palavras antes do termo a negação alcança
+  # palavras que encerram o escopo da negação: "não tenho febre, mas estou com falta de ar"
+  scope_breakers: [mas, porem, entretanto, contudo, todavia, so, agora]
+
+categories:
+  dyspnea:
+    label: Dificuldade respiratória
+    severity: medium
+    terms:
+      - falta de ar
+      - sem ar
+      - dificuldade para respirar
+      - dificuldade de respirar
+      - nao consigo respirar
+      - respiracao curta
+      - respirando mal
+      - chiado no peito
+      - sufocado
+      - sufocada
+      - sufocando
+      - ofegante
+      - cansaco para respirar
+  fatigue:
+    label: Fadiga
+    severity: low
+    terms:
+      - cansaco
+      - cansado
+      - cansada
+      - fadiga
+      - exausto
+      - exausta
+      - esgotado
+      - esgotada
+      - sem energia
+      - sem forca
+      - fraqueza
+      - me canso
+  chest_pain:
+    label: Dor torácica
+    severity: high
+    terms:
+      - dor no peito
+      - aperto no peito
+      - pressao no peito
+      - dor toracica
+      - queimacao no peito
+  neuro:
+    label: Sintoma neurológico
+    severity: medium
+    terms:
+      - confuso
+      - confusa
+      - confusao
+      - tontura
+      - tonto
+      - tonta
+      - desmaio
+      - desmaiei
+      - fala enrolada
+      - fala arrastada
+      - lingua enrolada
+      - formigamento
+      - dormencia
+      - visao embacada
+  bleeding:
+    label: Sangramento
+    severity: high
+    terms:
+      - sangramento
+      - tossindo sangue
+      - tosse com sangue
+      - vomitando sangue
+      - vomito com sangue

@@ -1,0 +1,545 @@
+{
+  "language": "pt-BR",
+  "segments": [
+    {
+      "text": "Bom dia. Como a senhora passou a noite?",
+      "start": 0.3,
+      "end": 3.38,
+      "speaker": null,
+      "confidence": 0.93,
+      "words": [
+        {
+          "text": "bom",
+          "start": 0.3,
+          "end": 0.65
+        },
+        {
+          "text": "dia",
+          "start": 0.68,
+          "end": 1.03
+        },
+        {
+          "text": "como",
+          "start": 1.07,
+          "end": 1.42
+        },
+        {
+          "text": "a",
+          "start": 1.45,
+          "end": 1.8
+        },
+        {
+          "text": "senhora",
+          "start": 1.84,
+          "end": 2.18
+        },
+        {
+          "text": "passou",
+          "start": 2.22,
+          "end": 2.57
+        },
+        {
+          "text": "a",
+          "start": 2.61,
+          "end": 2.95
+        },
+        {
+          "text": "noite",
+          "start": 2.99,
+          "end": 3.34
+        }
+      ]
+    },
+    {
+      "text": "Bom dia, doutor.",
+      "start": 4.18,
+      "end": 5.83,
+      "speaker": null,
+      "confidence": 0.93,
+      "words": [
+        {
+          "text": "bom",
+          "start": 4.18,
+          "end": 4.67
+        },
+        {
+          "text": "dia",
+          "start": 4.73,
+          "end": 5.22
+        },
+        {
+          "text": "doutor",
+          "start": 5.28,
+          "end": 5.77
+        }
+      ]
+    },
+    {
+      "text": "Passei mal.",
+      "start": 6.93,
+      "end": 8.02,
+      "speaker": null,
+      "confidence": 0.93,
+      "words": [
+        {
+          "text": "passei",
+          "start": 6.93,
+          "end": 7.42
+        },
+        {
+          "text": "mal",
+          "start": 7.47,
+          "end": 7.97
+        }
+      ]
+    },
+    {
+      "text": "Acordei várias vezes com falta de ar.",
+      "start": 9.12,
+      "end": 12.97,
+      "speaker": null,
+      "confidence": 0.93,
+      "words": [
+        {
+          "text": "acordei",
+          "start": 9.12,
+          "end": 9.62
+        },
+        {
+          "text": "várias",
+          "start": 9.67,
+          "end": 10.17
+        },
+        {
+          "text": "vezes",
+          "start": 10.22,
+          "end": 10.72
+        },
+        {
+          "text": "com",
+          "start": 10.77,
+          "end": 11.27
+        },
+        {
+          "text": "falta",
+          "start": 11.32,
+          "end": 11.82
+        },
+        {
+          "text": "de",
+          "start": 11.87,
+          "end": 12.37
+        },
+        {
+          "text": "ar",
+          "start": 12.42,
+          "end": 12.92
+        }
+      ]
+    },
+    {
+      "text": "Tive que dormir sentada.",
+      "start": 14.07,
+      "end": 16.27,
+      "speaker": null,
+      "confidence": 0.93,
+      "words": [
+        {
+          "text": "tive",
+          "start": 14.07,
+          "end": 14.56
+        },
+        {
+          "text": "que",
+          "start": 14.62,
+          "end": 15.11
+        },
+        {
+          "text": "dormir",
+          "start": 15.17,
+          "end": 15.66
+        },
+        {
+          "text": "sentada",
+          "start": 15.72,
+          "end": 16.21
+        }
+      ]
+    },
+    {
+      "text": "E durante o dia, como está?",
+      "start": 17.07,
+      "end": 19.38,
+      "speaker": null,
+      "confidence": 0.93,
+      "words": [
+        {
+          "text": "e",
+          "start": 17.07,
+          "end": 17.41
+        },
+        {
+          "text": "durante",
+          "start": 17.45,
+          "end": 17.8
+        },
+        {
+          "text": "o",
+          "start": 17.84,
+          "end": 18.18
+        },
+        {
+          "text": "dia",
+          "start": 18.22,
+          "end": 18.57
+        },
+        {
+          "text": "como",
+          "start": 18.61,
+          "end": 18.95
+        },
+        {
+          "text": "está",
+          "start": 18.99,
+          "end": 19.34
+        }
+      ]
+    },
+    {
+      "text": "Estou muito cansada.",
+      "start": 20.18,
+      "end": 21.82,
+      "speaker": null,
+      "confidence": 0.93,
+      "words": [
+        {
+          "text": "estou",
+          "start": 20.18,
+          "end": 20.67
+        },
+        {
+          "text": "muito",
+          "start": 20.73,
+          "end": 21.22
+        },
+        {
+          "text": "cansada",
+          "start": 21.27,
+          "end": 21.77
+        }
+      ]
+    },
+    {
+      "text": "Me canso só de ir até o banheiro.",
+      "start": 22.92,
+      "end": 27.32,
+      "speaker": null,
+      "confidence": 0.93,
+      "words": [
+        {
+          "text": "me",
+          "start": 22.92,
+          "end": 23.42
+        },
+        {
+          "text": "canso",
+          "start": 23.47,
+          "end": 23.97
+        },
+        {
+          "text": "só",
+          "start": 24.02,
+          "end": 24.52
+        },
+        {
+          "text": "de",
+          "start": 24.57,
+          "end": 25.07
+        },
+        {
+          "text": "ir",
+          "start": 25.12,
+          "end": 25.62
+        },
+        {
+          "text": "até",
+          "start": 25.67,
+          "end": 26.17
+        },
+        {
+          "text": "o",
+          "start": 26.22,
+          "end": 26.72
+        },
+        {
+          "text": "banheiro",
+          "start": 26.77,
+          "end": 27.26
+        }
+      ]
+    },
+    {
+      "text": "Fico sem ar no meio do caminho.",
+      "start": 28.42,
+      "end": 32.27,
+      "speaker": null,
+      "confidence": 0.93,
+      "words": [
+        {
+          "text": "fico",
+          "start": 28.42,
+          "end": 28.91
+        },
+        {
+          "text": "sem",
+          "start": 28.97,
+          "end": 29.46
+        },
+        {
+          "text": "ar",
+          "start": 29.52,
+          "end": 30.01
+        },
+        {
+          "text": "no",
+          "start": 30.07,
+          "end": 30.56
+        },
+        {
+          "text": "meio",
+          "start": 30.62,
+          "end": 31.11
+        },
+        {
+          "text": "do",
+          "start": 31.17,
+          "end": 31.66
+        },
+        {
+          "text": "caminho",
+          "start": 31.72,
+          "end": 32.21
+        }
+      ]
+    },
+    {
+      "text": "Está sentindo dor no peito?",
+      "start": 33.07,
+      "end": 34.99,
+      "speaker": null,
+      "confidence": 0.93,
+      "words": [
+        {
+          "text": "está",
+          "start": 33.07,
+          "end": 33.41
+        },
+        {
+          "text": "sentindo",
+          "start": 33.45,
+          "end": 33.8
+        },
+        {
+          "text": "dor",
+          "start": 33.84,
+          "end": 34.18
+        },
+        {
+          "text": "no",
+          "start": 34.22,
+          "end": 34.57
+        },
+        {
+          "text": "peito",
+          "start": 34.6,
+          "end": 34.95
+        }
+      ]
+    },
+    {
+      "text": "Não sinto dor no peito.",
+      "start": 35.79,
+      "end": 38.54,
+      "speaker": null,
+      "confidence": 0.93,
+      "words": [
+        {
+          "text": "não",
+          "start": 35.79,
+          "end": 36.28
+        },
+        {
+          "text": "sinto",
+          "start": 36.34,
+          "end": 36.83
+        },
+        {
+          "text": "dor",
+          "start": 36.89,
+          "end": 37.38
+        },
+        {
+          "text": "no",
+          "start": 37.44,
+          "end": 37.93
+        },
+        {
+          "text": "peito",
+          "start": 37.99,
+          "end": 38.48
+        }
+      ]
+    },
+    {
+      "text": "É mais esse cansaço para respirar.",
+      "start": 39.64,
+      "end": 42.93,
+      "speaker": null,
+      "confidence": 0.93,
+      "words": [
+        {
+          "text": "é",
+          "start": 39.64,
+          "end": 40.13
+        },
+        {
+          "text": "mais",
+          "start": 40.19,
+          "end": 40.68
+        },
+        {
+          "text": "esse",
+          "start": 40.74,
+          "end": 41.23
+        },
+        {
+          "text": "cansaço",
+          "start": 41.28,
+          "end": 41.78
+        },
+        {
+          "text": "para",
+          "start": 41.83,
+          "end": 42.33
+        },
+        {
+          "text": "respirar",
+          "start": 42.38,
+          "end": 42.88
+        }
+      ]
+    },
+    {
+      "text": "Vou ajustar o oxigênio e pedir uma gasometria. Qualquer piora, chame a enfermagem.",
+      "start": 43.73,
+      "end": 48.73,
+      "speaker": null,
+      "confidence": 0.93,
+      "words": [
+        {
+          "text": "vou",
+          "start": 43.73,
+          "end": 44.08
+        },
+        {
+          "text": "ajustar",
+          "start": 44.12,
+          "end": 44.46
+        },
+        {
+          "text": "o",
+          "start": 44.5,
+          "end": 44.85
+        },
+        {
+          "text": "oxigênio",
+          "start": 44.89,
+          "end": 45.23
+        },
+        {
+          "text": "e",
+          "start": 45.27,
+          "end": 45.62
+        },
+        {
+          "text": "pedir",
+          "start": 45.66,
+          "end": 46.0
+        },
+        {
+          "text": "uma",
+          "start": 46.04,
+          "end": 46.39
+        },
+        {
+          "text": "gasometria",
+          "start": 46.43,
+          "end": 46.77
+        },
+        {
+          "text": "qualquer",
+          "start": 46.81,
+          "end": 47.16
+        },
+        {
+          "text": "piora",
+          "start": 47.19,
+          "end": 47.54
+        },
+        {
+          "text": "chame",
+          "start": 47.58,
+          "end": 47.93
+        },
+        {
+          "text": "a",
+          "start": 47.96,
+          "end": 48.31
+        },
+        {
+          "text": "enfermagem",
+          "start": 48.35,
+          "end": 48.69
+        }
+      ]
+    },
+    {
+      "text": "Está bem.",
+      "start": 49.53,
+      "end": 50.63,
+      "speaker": null,
+      "confidence": 0.93,
+      "words": [
+        {
+          "text": "está",
+          "start": 49.53,
+          "end": 50.03
+        },
+        {
+          "text": "bem",
+          "start": 50.08,
+          "end": 50.58
+        }
+      ]
+    },
+    {
+      "text": "Obrigada, doutor.",
+      "start": 51.73,
+      "end": 52.83,
+      "speaker": null,
+      "confidence": 0.93,
+      "words": [
+        {
+          "text": "obrigada",
+          "start": 51.73,
+          "end": 52.23
+        },
+        {
+          "text": "doutor",
+          "start": 52.28,
+          "end": 52.78
+        }
+      ]
+    }
+  ]
+}
