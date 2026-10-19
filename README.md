@@ -12,7 +12,7 @@ Sistema que analisa e funde dados multimodais (vídeo, áudio e texto/sinais vit
 | Módulo | Status |
 |---|---|
 | Setup / infraestrutura (PR 1) | ✅ |
-| Core: eventos e alertas (PR 2) | ✅ |
+| Core: eventos e alertas (PR 2) | ⏳ |
 | Sinais vitais (PR 3) | ⏳ |
 | Áudio + Azure (PR 4) | ⏳ |
 | Vídeo: YOLOv8 + OpenPose (PR 5) | ⏳ |
