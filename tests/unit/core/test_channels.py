@@ -107,7 +107,7 @@ def test_generic_webhook_does_not_send_evidence():
     reason = body["reasons"][0]
     assert "evidence" not in reason and "artifacts" not in reason
     assert reason["type"] == "spo2_drop"
-    assert "88" not in json.dumps(body)
+    assert "window" not in json.dumps(body)
 
 
 @pytest.mark.parametrize("fmt", ["slack", "discord", "teams"])
