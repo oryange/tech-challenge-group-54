@@ -6,7 +6,7 @@ from typing import Any
 import numpy as np
 
 from medwatch.video.keypoints import Person
-from medwatch.video.pose.base import PoseEstimator, pick_device
+from medwatch.video.pose.base import PoseEstimator, pick_device, yolo_weights
 
 
 class YoloPoseEstimator(PoseEstimator):
@@ -21,9 +21,7 @@ class YoloPoseEstimator(PoseEstimator):
     ) -> None:
         from ultralytics import YOLO
 
-        path = (models_dir / weights) if models_dir else Path(weights)
-        # o Ultralytics baixa os pesos oficiais para esse caminho se ainda não existirem
-        self._model = YOLO(str(path))
+        self._model = YOLO(str(yolo_weights(weights, models_dir)))
         self._conf = conf
         self._device = pick_device(device)
 

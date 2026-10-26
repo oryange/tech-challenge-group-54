@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import typer
@@ -53,7 +54,25 @@ def _resolve(settings: Settings, video: str) -> tuple[Path, str | None]:
     raise typer.Exit(code=1)
 
 
-async def _send_alerts(settings: Settings, events: list[ClinicalEvent]) -> tuple[int, int, int]:
+START_TIME_EXAMPLE = "2026-10-19T14:30:00-03:00"
+
+
+def parse_start_time(value: str | None) -> datetime:
+    """Início da gravação em ISO 8601 com fuso; agora (UTC) se omitido."""
+    if value is None:
+        return datetime.now(UTC)
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError(f"--start-time inválido; use ISO 8601, ex.: {START_TIME_EXAMPLE}") from exc
+    if parsed.tzinfo is None:
+        raise ValueError(f"--start-time precisa de fuso horário, ex.: {START_TIME_EXAMPLE}")
+    return parsed
+
+
+async def _send_alerts(
+    settings: Settings, events: list[ClinicalEvent]
+) -> tuple[int, int, int, int]:
     bus = InMemoryEventBus()
     manager = build_alert_manager(settings)
     consumer = asyncio.create_task(
@@ -63,7 +82,7 @@ async def _send_alerts(settings: Settings, events: list[ClinicalEvent]) -> tuple
         await bus.publish(event)
     await bus.close()
     stats = await consumer
-    return stats.sent, stats.suppressed, stats.ignored
+    return stats.sent, stats.suppressed, stats.ignored, stats.failed
 
 
 @app.command()
@@ -74,12 +93,22 @@ def analyze(
     backend: str = typer.Option("yolo", help="yolo (rápido) ou openpose (CMU)."),
     crop: str | None = typer.Option(None, help="right/left: usa metade do quadro."),
     patient: str = typer.Option("PAC-DEMO", help="Identificador pseudonimizado do paciente."),
+    start_time: str | None = typer.Option(
+        None,
+        "--start-time",
+        help="Início da gravação, ISO 8601 com fuso (padrão: agora). Alinha com os vitais.",
+    ),
     alert: bool = typer.Option(False, help="Envia os achados ao AlertManager."),
     annotated: bool = typer.Option(True, help="Gera o vídeo anotado."),
 ) -> None:
     """Analisa um vídeo e gera relatório HTML/JSON, vídeo anotado e série de pose."""
     settings = get_settings()
     config = _config(settings)
+    try:
+        recorded_at = parse_start_time(start_time)
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from exc
     path, sample_crop = _resolve(settings, video)
     objects = None
     if scene:
@@ -100,7 +129,7 @@ def analyze(
     reports = settings.outputs_dir / "reports" / "video"
     stem = f"{path.stem}_{analysis.backend}"
     rendered = render(analysis, config, reports, stem, write_video=annotated)
-    events = build_events(analysis, patient, keyframes=rendered.keyframes)
+    events = build_events(analysis, patient, start_time=recorded_at, keyframes=rendered.keyframes)
     timeline_png = plot_timeline(analysis, config, reports / f"{stem}_metricas.png")
     report_html = write_html(analysis, events, timeline_png, reports / f"{stem}.html")
     report_json = write_json(analysis, events, reports / f"{stem}.json")
@@ -123,11 +152,13 @@ def analyze(
         typer.echo(f"Vídeo anotado: {rendered.video}")
 
     if alert:
-        sent, suppressed, ignored = asyncio.run(_send_alerts(settings, events))
+        sent, suppressed, ignored, failed = asyncio.run(_send_alerts(settings, events))
         typer.echo(
             f"Alertas enviados: {sent} · suprimidos (cooldown): {suppressed} · "
             f"ignorados (< {settings.alert_min_severity}): {ignored}"
         )
+        if failed:
+            typer.echo(f"Sem entrega em nenhum canal: {failed}", err=True)
 
 
 @app.command("evaluate-falls")

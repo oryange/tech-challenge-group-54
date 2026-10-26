@@ -85,8 +85,13 @@ def _fetch(client: httpx.Client, url: str, path: Path, expected: str) -> bool:
 
 
 def _client(transport: httpx.BaseTransport | None) -> httpx.Client:
-    # o Wikimedia exige User-Agent identificável
-    headers = {"User-Agent": "medwatch-tech-challenge/0.1 (academic project, POS Tech FIAP)"}
+    # o Wikimedia exige User-Agent identificável com forma de contato; sem a URL, responde 429
+    headers = {
+        "User-Agent": (
+            "medwatch-tech-challenge/0.1 "
+            "(https://github.com/oryange/tech-challenge-group-54; academic project, POS Tech FIAP)"
+        )
+    }
     return httpx.Client(transport=transport, timeout=120, follow_redirects=True, headers=headers)
 
 

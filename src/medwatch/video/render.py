@@ -1,11 +1,14 @@
 """Vídeo anotado (esqueleto, métricas, desvios, objetos, áreas críticas) e quadros-chave."""
 
+import shutil
+import subprocess  # noqa: S404 - só chama o ffmpeg do PATH com argumentos fixos
 from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
 
 import cv2
 import numpy as np
+from loguru import logger
 from matplotlib import font_manager
 from PIL import Image, ImageDraw, ImageFont
 
@@ -125,13 +128,41 @@ def draw_frame(
     return cv2.cvtColor(np.asarray(image), cv2.COLOR_RGB2BGR)
 
 
-def _writer(path: Path, fps: float, size: tuple[int, int]) -> cv2.VideoWriter:
+def _writer(path: Path, fps: float, size: tuple[int, int]) -> tuple[cv2.VideoWriter, str]:
     # avc1 (H.264) abre no navegador; mp4v é o fallback disponível em qualquer build do OpenCV
     for codec in ("avc1", "mp4v"):
         writer = cv2.VideoWriter(str(path), cv2.VideoWriter.fourcc(*codec), fps, size)
         if writer.isOpened():
-            return writer
+            return writer, codec
     raise RuntimeError("Nenhum codec de vídeo disponível no OpenCV")
+
+
+def transcode_to_h264(path: Path) -> bool:
+    """Converte o MP4 (mp4v) para H.264 com o ffmpeg, para o vídeo abrir no navegador.
+
+    O OpenCV do pip no Linux/Docker não traz o encoder H.264 e cai no mp4v, que os
+    navegadores não reproduzem. O ffmpeg já está no Dockerfile. Retorna False sem o ffmpeg.
+    """
+    ffmpeg = shutil.which("ffmpeg")
+    if ffmpeg is None:
+        logger.warning(
+            "{} gravado em mp4v (sem H.264 no OpenCV) e ffmpeg não encontrado: o vídeo pode "
+            "não abrir no navegador",
+            path.name,
+        )
+        return False
+    converted = path.with_name(f"{path.stem}.h264{path.suffix}")
+    command = [
+        ffmpeg, "-y", "-loglevel", "error", "-i", str(path),
+        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(converted),
+    ]  # fmt: skip
+    result = subprocess.run(command, capture_output=True, text=True, check=False)  # noqa: S603
+    if result.returncode != 0:
+        converted.unlink(missing_ok=True)
+        logger.warning("ffmpeg falhou ao converter {}: {}", path.name, result.stderr.strip())
+        return False
+    converted.replace(path)
+    return True
 
 
 def render(
@@ -151,6 +182,7 @@ def render(
     keyframes: dict[int, Path] = {}
     video_path = output_dir / f"{stem}_anotado.mp4" if write_video else None
     writer = None
+    codec = ""
     for k, (_, _, frame) in enumerate(
         iter_sampled_frames(analysis.video, config.sample_fps, analysis.crop)
     ):
@@ -162,7 +194,7 @@ def render(
         if video_path is not None:
             if writer is None:
                 size = (annotated.shape[1], annotated.shape[0])
-                writer = _writer(video_path, config.sample_fps, size)
+                writer, codec = _writer(video_path, config.sample_fps, size)
             writer.write(annotated)
         for i, frame_index in wanted.items():
             if frame_index == k:
@@ -171,4 +203,6 @@ def render(
                 keyframes[i] = path
     if writer is not None:
         writer.release()
+        if codec == "mp4v" and video_path is not None:
+            transcode_to_h264(video_path)
     return RenderResult(video=video_path, keyframes=keyframes)

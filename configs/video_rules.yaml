@@ -6,12 +6,17 @@ smoothing_frames: 5       # mediana móvel dos keypoints (reduz tremor do estima
 min_keypoint_conf: 0.3    # keypoints abaixo disso são ignorados
 min_deviation_seconds: 0.3  # um desvio precisa durar isso para virar evento (o fundo de
                             # um agachamento dura ~0,4 s)
+max_gap_frames: 2         # lacunas de até 2 quadros (0,2 s) na métrica são interpoladas, para
+                          # uma oclusão rápida não partir um desvio em dois trechos curtos
 
 exercises:
   agachamento:
     description: Agachamento bilateral (vista lateral ou posterior)
-    # a repetição começa quando a métrica cruza `enter` e termina quando volta além de `exit`
-    repetition: {metric: knee_angle_min, enter_below: 120, exit_above: 155}
+    # a repetição começa quando a métrica cruza `enter` e termina quando volta além de `exit`.
+    # `enter` fica mais frouxo que a meta da regra profundidade_insuficiente (130°): assim um
+    # agachamento raso (fundo entre 130° e 145°) conta como repetição e é marcado como
+    # insuficiente. Os 10° até `exit` evitam contar duas vezes o tremor perto do limiar
+    repetition: {metric: knee_angle_min, enter_below: 145, exit_above: 155}
     rules:
       - name: flexao_joelho_excessiva
         metric: knee_angle_min
@@ -59,7 +64,8 @@ exercises:
 
   elevacao_bracos:
     description: Elevação bilateral dos braços (vista frontal)
-    repetition: {metric: shoulder_angle_min, enter_above: 130, exit_below: 60}
+    # entrada (100°) abaixo da meta de amplitude (150°): elevações parciais contam e são marcadas
+    repetition: {metric: shoulder_angle_min, enter_above: 100, exit_below: 60}
     rules:
       - name: assimetria_ombros
         metric: shoulder_asymmetry
@@ -90,6 +96,8 @@ fall:
   lying_aspect_ratio: 1.6   # largura/altura da caixa da pessoa: deitada no chão
   posture_frames: 3         # mediana móvel da postura (a pose oscila com a pessoa no chão)
   window_seconds: 3.0       # tempo máximo entre a descida e a postura horizontal
+  edge_margin: 0.02         # caixa a menos de 2% da borda de cima está cortada (pessoa perto
+  tilted_trunk_lean: 45     # da câmera): a proporção só vale se o tronco tiver ≥ 45°
 
 # Áreas críticas (coordenadas normalizadas 0–1 do quadro). Uma cena é escolhida na CLI.
 scenes:

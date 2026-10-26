@@ -52,3 +52,23 @@ def test_unknown_backend():
 def test_data_download_unknown_dataset():
     result = runner.invoke(app, ["data", "download", "--dataset", "nada"])
     assert result.exit_code == 1
+
+
+def test_video_analyze_uses_start_time_for_events(tmp_path, scripted):
+    video = write_video(tmp_path / "queda.mp4", seconds=5)
+    result = runner.invoke(
+        app,
+        ["video", "analyze", str(video), "--start-time", "2180-01-01T10:00:00+00:00"],
+    )
+    assert result.exit_code == 0, result.output
+    reports = get_settings().outputs_dir / "reports" / "video"
+    payload = json.loads((reports / "queda_scripted.json").read_text(encoding="utf-8"))
+    assert payload["events"][0]["timestamp"].startswith("2180-01-01T10:00:0")
+
+
+@pytest.mark.parametrize("value", ["ontem", "2180-01-01T10:00:00"])
+def test_video_analyze_rejects_invalid_or_naive_start_time(tmp_path, scripted, value):
+    video = write_video(tmp_path / "clip.mp4", seconds=1)
+    result = runner.invoke(app, ["video", "analyze", str(video), "--start-time", value])
+    assert result.exit_code == 1
+    assert "--start-time" in result.output

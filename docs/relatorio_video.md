@@ -26,7 +26,7 @@ vídeo ─► amostragem (10 quadros/s) ─► pose (YOLOv8-pose | OpenPose CMU)
 
 **Métricas** (`src/medwatch/video/metrics.py`): ângulo dos joelhos (quadril–joelho–tornozelo), joelho da perna de apoio, assimetria entre joelhos, ângulo do quadril e dos ombros (quadril–ombro–cotovelo), assimetria de ombros e **inclinação do tronco** (segmento quadril→ombro em relação à vertical). Na vista lateral, quando um dos lados fica oculto, usa-se o lado visível.
 
-**Regras** (`configs/video_rules.yaml`): cada exercício define limites por quadro (ex.: tronco ≤ 40°), que só viram desvio se durarem pelo menos 0,3 s, e metas por repetição (ex.: elevação ≥ 150°). As repetições são contadas por histerese: começam ao cruzar o limiar de entrada e terminam ao voltar além do limiar de saída. Cada regra traz mensagem, severidade e recomendação, e essas recomendações aparecem no relatório automático.
+**Regras** (`configs/video_rules.yaml`): cada exercício define limites por quadro (ex.: tronco ≤ 40°), que só viram desvio se durarem pelo menos 0,3 s, e metas por repetição (ex.: elevação ≥ 150°). Lacunas curtas na métrica (até 2 quadros, quando um keypoint fica com confiança baixa) são interpoladas antes do limiar, para uma oclusão rápida não partir um desvio em dois trechos curtos demais. As repetições são contadas por histerese: começam ao cruzar o limiar de entrada e terminam ao voltar além do limiar de saída. O limiar de entrada fica sempre **mais frouxo que a meta** (ex.: o agachamento conta a partir de 145° e a meta é chegar a 130°), e o carregamento da configuração recusa o contrário: com entrada em 120° e meta em 130°, um agachamento raso não contava como repetição e a execução incorreta aparecia como correta. Cada regra traz mensagem, severidade e recomendação, e essas recomendações aparecem no relatório automático.
 
 ## Modelos
 
@@ -59,7 +59,7 @@ medwatch video analyze agachamento_unipodal.webm --exercise agachamento_unipodal
 | Agachamento unipodal | YOLOv8 | 3 | 3 × compensação com inclinação anterior do tronco (até 69°; limite 40°) | 47% |
 | Agachamento unipodal | OpenPose | 3 | os mesmos 3 achados | 43% |
 | Agachamento com barra | YOLOv8 | 2 | 2 × flexão de joelho além do limite seguro (46°; limite 60°) | 14% |
-| Agachamento com barra | OpenPose | 2 | 1 × flexão excessiva + 1 × assimetria de joelhos | 11% |
+| Agachamento com barra | OpenPose | 2 | 2 × flexão excessiva + 1 × assimetria de joelhos | 17% |
 
 ![Compensação de tronco no agachamento unipodal](img/video_agachamento_compensacao.png)
 
@@ -69,13 +69,15 @@ medwatch video analyze agachamento_unipodal.webm --exercise agachamento_unipodal
 
 ![Flexão excessiva no agachamento com barra](img/video_agachamento_flexao.png)
 
-Na vista posterior o OpenPose é menos estável que o YOLOv8 (perdeu uma das flexões e marcou uma assimetria), o que é coerente com a menor confiança dos keypoints de joelho e tornozelo vistos de trás.
+Na vista posterior o OpenPose é menos estável que o YOLOv8 (marcou uma assimetria que o YOLOv8 não vê), o que é coerente com a menor confiança dos keypoints de joelho e tornozelo vistos de trás. Antes da interpolação de lacunas curtas ele também perdia uma das flexões, porque um quadro sem keypoint partia o desvio em dois trechos curtos demais. Repetições com menos de 0,5 s não contam: o vídeo começa com a pessoa terminando de subir, e esse trecho virava uma "repetição" de 0,2 s.
 
-**Execução correta × incorreta.** Nos testes automatizados, com esqueletos sintéticos de ângulos conhecidos, agachamentos corretos (fundo de 85°, tronco 20°) geram 3 repetições e **nenhum** desvio, e agachamentos incorretos (fundo de 50°, tronco 60°) geram 3 desvios de flexão excessiva e de inclinação do tronco. Para o vídeo de demonstração, o grupo vai gravar o mesmo exercício nas duas versões.
+**Execução correta × incorreta.** Nos testes automatizados, com esqueletos sintéticos de ângulos conhecidos, agachamentos corretos (fundo de 85°, tronco 20°) geram 3 repetições e **nenhum** desvio, agachamentos incorretos (fundo de 50°, tronco 60°) geram 3 desvios de flexão excessiva e de inclinação do tronco, e agachamentos rasos (fundo de 138°) geram 3 repetições com profundidade insuficiente. Para o vídeo de demonstração, o grupo vai gravar o mesmo exercício nas duas versões.
 
 ### Detecção de quedas
 
-**Regra:** o quadril desce pelo menos 25% da altura da pessoa em pé em até 1 s, e nos 3 s seguintes a pessoa fica na horizontal (mediana móvel de 3 quadros da razão largura/altura da caixa > 1,6). A mediana tolera os quadros em que o estimador perde a pessoa caída.
+**Regra:** o quadril desce pelo menos 25% da altura da pessoa em pé em até 1 s, e nos 3 s seguintes a pessoa fica na horizontal (mediana móvel de 3 quadros da razão largura/altura da caixa > 1,6). A mediana tolera os quadros em que o estimador perde a pessoa caída. Caixas cortadas na borda de cima do quadro (pessoa perto da câmera, só o tronco visível) ficam largas sem a pessoa estar deitada; nesses quadros a proporção só conta se a inclinação do tronco também passar de 45°.
+
+**Filtros testados e descartados:** usar a inclinação do tronco como veto geral e ignorar caixas encostadas em qualquer borda derrubou a calibração de 9/10 para 7/10 (YOLOv8). Com a câmera de frente, quem cai na direção dela fica com o tronco quase vertical na imagem (0–4° em `fall-03`, já no chão), e quem está no chão costuma encostar na borda de baixo. Por isso ficou só o filtro da borda de cima, que mantém os resultados abaixo.
 
 **Calibração honesta:** os limiares foram escolhidos **só** com as sequências 01–10 do UR Fall. As sequências 11–20 ficaram separadas para validação, sem ajuste posterior.
 
@@ -118,5 +120,5 @@ Para cada vídeo, em `outputs/reports/video/`:
 
 - **Ângulos 2D:** são projeções no plano da câmera. A vista posterior distorce flexão e inclinação, e a melhor vista para agachamento é a lateral.
 - **Instrumental cirúrgico:** os pesos COCO do YOLOv8 não reconhecem instrumentos específicos (detectam "scissors" e "knife"). Para cirurgia real seria preciso fine-tuning (ex.: m2cai16-tool-locations). As regras de campo estéril e contagem estão implementadas e testadas, mas sem vídeo cirúrgico real de validação.
-- **Quedas:** foram avaliadas com uma única câmera frontal, em 40 sequências. A regra depende de a pessoa aparecer em pé antes de cair.
+- **Quedas:** foram avaliadas com uma única câmera frontal, em 40 sequências. A regra depende de a pessoa aparecer em pé antes de cair. Uma pessoa saindo do quadro **por baixo** ainda pode gerar caixa larga; esse caso não tem filtro, porque a borda de baixo é onde a pessoa caída costuma ficar. As sequências 21–30 (quedas) e 21–40 (atividades) do UR Fall ainda não foram usadas e podem servir como conjunto de teste intocado.
 - **Limiares de exercício:** são valores de referência genéricos. Na prática, o fisioterapeuta ajusta por paciente em `configs/video_rules.yaml`.

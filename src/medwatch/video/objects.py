@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from medwatch.core.events import Severity
-from medwatch.video.pose.base import pick_device
+from medwatch.video.pose.base import pick_device, yolo_weights
 from medwatch.video.rules import Finding, Roi, _intervals, point_in_polygon
 
 
@@ -39,7 +39,7 @@ class ObjectDetector:
     ) -> None:
         from ultralytics import YOLO
 
-        self._model = YOLO(str((models_dir / weights) if models_dir else weights))
+        self._model = YOLO(str(yolo_weights(weights, models_dir)))
         self._conf = conf
         self._device = pick_device(device)
 

@@ -143,14 +143,15 @@ medwatch video analyze agachamento_unipodal.webm --exercise agachamento_unipodal
 medwatch video analyze agachamento_barra.webm --exercise agachamento --backend openpose
 medwatch video analyze urfall_queda_01.mp4 --alert          # queda → alerta CRITICAL
 medwatch video analyze meu_video.mp4 --scene quarto         # áreas críticas (ativa objetos)
+medwatch video analyze meu_video.mp4 --start-time 2026-10-19T14:30:00-03:00  # horário real
 
 medwatch data download --dataset urfall      # 40 sequências do UR Fall Dataset
 medwatch video evaluate-falls                # acurácia: calibração 01–10, validação 11–20
 ```
 
-Exercícios disponíveis: `agachamento`, `agachamento_unipodal` e `elevacao_bracos`. Limiares, cenas e áreas críticas ficam em [configs/video_rules.yaml](configs/video_rules.yaml). Os pesos dos modelos são baixados para `models/` no primeiro uso.
+Exercícios disponíveis: `agachamento`, `agachamento_unipodal` e `elevacao_bracos`. Limiares, cenas e áreas críticas ficam em [configs/video_rules.yaml](configs/video_rules.yaml). Os pesos dos modelos são baixados para `models/` no primeiro uso, com SHA-256 conferido (YOLOv8n, YOLOv8n-pose e OpenPose).
 
-Cada análise gera em `outputs/reports/video/` um relatório HTML autocontido, um JSON com os eventos, o vídeo anotado e a série de pose (`.parquet`).
+Cada análise gera em `outputs/reports/video/` um relatório HTML autocontido, um JSON com os eventos, o vídeo anotado e a série de pose (`.parquet`). Sem `--start-time`, os eventos são datados a partir do momento da análise; para fundir com os vitais (PR 7), informe o início real da gravação. Se o OpenCV não tiver H.264 (caso do pip no Linux/Docker), o vídeo anotado é convertido com o `ffmpeg` para abrir no navegador.
 
 Detecção de quedas (UR Fall Dataset, conjunto de validação 11–20, sem ajuste de limiares):
 

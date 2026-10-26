@@ -26,6 +26,8 @@ from medwatch.video.rules import (
     repetition_findings,
 )
 
+NON_EXERCISE_FINDINGS = {"fall_detected", "instrument_count_mismatch"}
+
 
 @dataclass
 class VideoAnalysis:
@@ -51,7 +53,9 @@ class VideoAnalysis:
             return 0.0
         active = pd.Series(False, index=times.index)
         for f in self.findings:
-            if f.type != "fall_detected" and not f.type.startswith("roi_"):
+            # queda, área crítica e contagem de instrumentos não são desvio de exercício: a
+            # contagem cobre o vídeo inteiro e daria "100% fora do padrão"
+            if f.type not in NON_EXERCISE_FINDINGS and not f.type.startswith("roi_"):
                 active |= (times >= f.start) & (times <= f.end)
         return float(active.mean())
 
@@ -204,7 +208,9 @@ class VideoAnalyzer:
                 if rule.kind == "repetition":
                     findings += repetition_findings(rule, analysis.repetitions)
                 else:
-                    findings += frame_findings(rule, timeline, times, cfg.min_deviation_seconds)
+                    findings += frame_findings(
+                        rule, timeline, times, cfg.min_deviation_seconds, cfg.max_gap_frames
+                    )
 
         heights = timeline["bbox_y2"] - timeline["bbox_y1"]
         widths = timeline["bbox_x2"] - timeline["bbox_x1"]
@@ -212,7 +218,17 @@ class VideoAnalyzer:
         person_height = float(upright.median() if len(upright) else heights.quantile(0.9))
         # sem quadril visível (ex.: pessoa caída de lado), usa o centro da caixa da pessoa
         hip_y = timeline["hip_y"].fillna((timeline["bbox_y1"] + timeline["bbox_y2"]) / 2)
-        findings += detect_falls(cfg.fall, times, hip_y, person_height, widths / heights)
+        # caixa cortada em cima: pessoa perto da câmera, a proporção não descreve a postura
+        at_edge = timeline["bbox_y1"] <= cfg.fall.edge_margin * analysis.frame_size[1]
+        findings += detect_falls(
+            cfg.fall,
+            times,
+            hip_y,
+            person_height,
+            widths / heights,
+            trunk_lean=timeline["trunk_lean"],
+            at_edge=at_edge,
+        )
 
         if analysis.scene:
             scene = cfg.scenes[analysis.scene]
@@ -252,7 +268,7 @@ def build_events(
                     "start_s": round(finding.start, 2),
                     "end_s": round(finding.end, 2),
                 },
-                artifacts=[artifact] if artifact else [],
+                artifacts=(artifact,) if artifact else (),
             )
         )
     return events

@@ -1,4 +1,5 @@
 import json
+import shutil
 from datetime import UTC, datetime, timedelta
 
 import cv2
@@ -10,6 +11,7 @@ from medwatch.video.objects import Detection
 from medwatch.video.pipeline import VideoAnalyzer, build_events, choose_person, iter_sampled_frames
 from medwatch.video.render import render
 from medwatch.video.report import plot_timeline, write_html, write_json, write_pose_series
+from medwatch.video.rules import Finding
 from tests.unit.video.helpers import (
     ScriptedPose,
     fall_script,
@@ -113,7 +115,7 @@ def test_render_report_and_events(video, tmp_path):
     first = events[0]
     assert first.source is Source.VIDEO
     assert first.timestamp == t0 + timedelta(seconds=analysis.findings[0].peak)
-    assert first.artifacts == [rendered.keyframes[0]]
+    assert first.artifacts == (rendered.keyframes[0],)
     assert first.evidence["video"] == "clip.mp4"
     assert {e.severity for e in events} <= {Severity.MEDIUM, Severity.LOW}
 
@@ -133,3 +135,54 @@ def test_render_only_keyframes(video, tmp_path):
     rendered = render(analysis, CONFIG, tmp_path, "queda", write_video=False)
     assert rendered.video is None
     assert rendered.keyframes[0].exists()
+
+
+def test_shallow_squats_are_counted_and_flagged_with_real_config(video):
+    """Agachamento raso (fundo de 138°) não pode aparecer como execução correta."""
+    script = squat_script(bottom=138, lean=10)
+    analysis = VideoAnalyzer(CONFIG, ScriptedPose(script)).analyze(video, exercise="agachamento")
+    assert len(analysis.repetitions) == 3
+    shallow = [f for f in analysis.findings if f.type == "profundidade_insuficiente"]
+    assert len(shallow) == 3
+
+
+def test_instrument_count_does_not_count_as_exercise_deviation(video):
+    analysis = VideoAnalyzer(CONFIG, ScriptedPose(squat_script())).analyze(
+        video, exercise="agachamento"
+    )
+    assert analysis.findings == []
+    times = analysis.timeline["time"]
+    analysis.findings.append(
+        Finding(
+            type="instrument_count_mismatch",
+            severity=Severity.HIGH,
+            message="x",
+            start=float(times.iloc[0]),
+            end=float(times.iloc[-1]),
+            peak=float(times.iloc[-1]),
+            score=0.9,
+        )
+    )
+    assert analysis.deviation_ratio == 0
+
+
+def test_transcode_without_ffmpeg_keeps_file(monkeypatch, tmp_path):
+    from medwatch.video import render as render_module
+
+    clip = write_video(tmp_path / "clip.mp4", seconds=1)
+    before = clip.read_bytes()
+    monkeypatch.setattr(render_module.shutil, "which", lambda name: None)
+    assert render_module.transcode_to_h264(clip) is False
+    assert clip.read_bytes() == before
+
+
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="ffmpeg não instalado")
+def test_transcode_converts_to_h264(tmp_path):
+    from medwatch.video.render import transcode_to_h264
+
+    clip = write_video(tmp_path / "clip.mp4", seconds=1)
+    assert transcode_to_h264(clip) is True
+    capture = cv2.VideoCapture(str(clip))
+    codec = int(capture.get(cv2.CAP_PROP_FOURCC)).to_bytes(4, "little").decode()
+    capture.release()
+    assert codec in {"avc1", "h264"}

@@ -32,6 +32,10 @@ lap>=0.5.12,<1.0.0
 # de wheels CUDA. No macOS o wheel padrão já é CPU/MPS.
 torch>=2.4.0,<3.0.0
 torchvision>=0.19.0,<1.0.0
+# scipy: filtro gaussiano dos mapas do OpenPose (video/pose/openpose_net.py).
+scipy>=1.11.0,<2.0.0
+# Pillow: texto com acentos no vídeo anotado e nos quadros-chave (video/render.py).
+Pillow>=10.0.0,<14.0.0
 
 # --- Áudio: Azure Speech to Text + Azure AI Language + acústica local -------------------
 # O Speech SDK no Linux precisa de libssl, libasound2 e ca-certificates (já no Dockerfile).

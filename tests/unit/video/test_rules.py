@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from medwatch.core.events import Severity
 from medwatch.video.rules import (
+    Exercise,
     FallConfig,
     RepetitionConfig,
     Rule,
@@ -54,7 +55,7 @@ def test_frame_rule_min_limit_reports_lowest_value():
 
 
 def test_count_repetitions_descending_movement():
-    config = RepetitionConfig(metric="m", enter_below=120, exit_above=155)
+    config = RepetitionConfig(metric="m", enter_below=120, exit_above=155, min_seconds=0)
     metrics, times = series([170, 130, 100, 80, 110, 160, 170, 115, 90, 150, 165, 140])
     reps = count_repetitions(config, metrics, times)
     assert [r.extreme_value for r in reps] == [80, 90]
@@ -62,13 +63,13 @@ def test_count_repetitions_descending_movement():
 
 
 def test_count_repetitions_ascending_movement():
-    config = RepetitionConfig(metric="m", enter_above=130, exit_below=60)
+    config = RepetitionConfig(metric="m", enter_above=130, exit_below=60, min_seconds=0)
     metrics, times = series([20, 90, 140, 165, 100, 40, 30, 135, 150, 50])
     assert [r.extreme_value for r in count_repetitions(config, metrics, times)] == [165, 150]
 
 
 def test_repetition_rule_flags_insufficient_amplitude():
-    config = RepetitionConfig(metric="m", enter_below=120, exit_above=155)
+    config = RepetitionConfig(metric="m", enter_below=120, exit_above=155, min_seconds=0)
     metrics, times = series([170, 110, 90, 160, 170, 115, 112, 160])
     reps = count_repetitions(config, metrics, times)
     rule = Rule(name="raso", metric="m", kind="repetition", target_max=100, message="raso")
@@ -114,3 +115,94 @@ def test_point_in_polygon():
     square = [(0.0, 0.0), (0.5, 0.0), (0.5, 0.5), (0.0, 0.5)]
     assert point_in_polygon(0.25, 0.25, square)
     assert not point_in_polygon(0.75, 0.25, square)
+
+
+def test_exercise_rejects_repetition_target_that_can_never_fire():
+    """enter_below 120 x target_max 130: toda repetição contada já atinge a meta."""
+    with pytest.raises(ValidationError, match="nunca dispara"):
+        Exercise(
+            description="x",
+            repetition=RepetitionConfig(metric="m", enter_below=120, exit_above=155),
+            rules=[Rule(name="raso", kind="repetition", metric="m", target_max=130, message="x")],
+        )
+    with pytest.raises(ValidationError, match="nunca dispara"):
+        Exercise(
+            description="x",
+            repetition=RepetitionConfig(metric="m", enter_above=150, exit_below=60),
+            rules=[Rule(name="baixo", kind="repetition", metric="m", target_min=150, message="x")],
+        )
+
+
+def test_exercise_rejects_repetition_rule_without_matching_repetition():
+    with pytest.raises(ValidationError, match="precisa de `repetition`"):
+        Exercise(
+            description="x",
+            rules=[Rule(name="raso", kind="repetition", metric="m", target_max=130, message="x")],
+        )
+
+
+def test_partial_arm_raise_counts_and_is_flagged_with_real_config():
+    exercise = load_config().exercises["elevacao_bracos"]
+    assert exercise.repetition is not None
+    # sobe até 125° (abaixo da meta de 150°) e desce, duas vezes
+    values = [30, 60, 90, 115, 125, 115, 80, 40, 30, 70, 110, 125, 100, 50, 30]
+    metrics, times = series(values, fps=4)  # ~1 s por elevação
+    metrics = metrics.rename(columns={"m": exercise.repetition.metric})
+    reps = count_repetitions(exercise.repetition, metrics, times)
+    assert len(reps) == 2
+    [rule] = [r for r in exercise.rules if r.name == "amplitude_insuficiente"]
+    assert len(repetition_findings(rule, reps)) == 2
+
+
+def test_short_low_confidence_gap_does_not_split_a_deviation():
+    rule = Rule(name="tronco", metric="m", max=40, severity=Severity.MEDIUM, message="x")
+    # 0,7 s acima do limite com um quadro sem keypoint no meio
+    metrics, times = series([10, 50, 52, 55, np.nan, 55, 52, 50, 10])
+    assert frame_findings(rule, metrics, times, min_seconds=0.3) == []  # sem interpolação
+    [finding] = frame_findings(rule, metrics, times, min_seconds=0.3, max_gap_frames=2)
+    assert finding.evidence["duration_s"] == pytest.approx(0.6)
+
+
+def test_long_gap_is_not_interpolated():
+    rule = Rule(name="tronco", metric="m", max=40, severity=Severity.MEDIUM, message="x")
+    metrics, times = series([10, 50, 55, np.nan, np.nan, np.nan, 55, 50, 10])
+    assert frame_findings(rule, metrics, times, min_seconds=0.3, max_gap_frames=2) == []
+
+
+def test_wide_box_cut_at_the_top_is_not_a_fall():
+    """Pessoa perto da câmera: a caixa cortada em cima fica larga sem a pessoa estar deitada."""
+    times, hip_y, aspect = fall_inputs(drop_seconds=0.4, final_aspect=2.2)
+    at_edge = pd.Series(aspect > 1)
+    trunk = pd.Series(10.0, index=times.index)
+    assert detect_falls(FallConfig(), times, hip_y, 100, aspect, trunk, at_edge) == []
+
+
+def test_box_cut_at_the_top_counts_when_trunk_is_tilted():
+    times, hip_y, aspect = fall_inputs(drop_seconds=0.4, final_aspect=2.2)
+    at_edge = pd.Series(aspect > 1)
+    trunk = pd.Series(np.where(aspect > 1, 80.0, 5.0))
+    [fall] = detect_falls(FallConfig(), times, hip_y, 100, aspect, trunk, at_edge)
+    assert fall.evidence["trunk_lean"] == pytest.approx(80.0)
+
+
+def test_upright_trunk_in_image_does_not_veto_a_fall():
+    """Queda em direção à câmera: o tronco deitado aparece vertical na imagem (2D)."""
+    times, hip_y, aspect = fall_inputs(drop_seconds=0.4, final_aspect=2.2)
+    trunk = pd.Series(3.0, index=times.index)
+    at_edge = pd.Series(False, index=times.index)
+    assert len(detect_falls(FallConfig(), times, hip_y, 100, aspect, trunk, at_edge)) == 1
+
+
+def test_repetition_shorter_than_minimum_is_ignored():
+    """O vídeo começa com a pessoa terminando de subir: 0,2 s não é uma repetição."""
+    config = RepetitionConfig(metric="m", enter_below=145, exit_above=155)
+    metrics, times = series([143, 150, 157, 165, 170, 120, 90, 70, 90, 120, 160, 170])
+    reps = count_repetitions(config, metrics, times)
+    assert [r.extreme_value for r in reps] == [70]
+
+
+def test_repetition_already_in_progress_at_start_still_counts():
+    """Vídeo que começa com a pessoa já no fundo: a repetição é real e conta."""
+    config = RepetitionConfig(metric="m", enter_below=145, exit_above=155)
+    metrics, times = series([60, 55, 70, 100, 130, 160, 170])
+    assert [r.extreme_value for r in count_repetitions(config, metrics, times)] == [55]

@@ -31,6 +31,7 @@ class RepetitionConfig(BaseModel):
     exit_above: float | None = None
     enter_above: float | None = None
     exit_below: float | None = None
+    min_seconds: float = 0.5  # repetição mais curta que isso é ruído ou movimento cortado
 
     @model_validator(mode="after")
     def _one_direction(self) -> "RepetitionConfig":
@@ -46,6 +47,41 @@ class Exercise(BaseModel):
     repetition: RepetitionConfig | None = None
     rules: list[Rule] = Field(default_factory=list)
 
+    @model_validator(mode="after")
+    def _repetition_rules_can_fire(self) -> "Exercise":
+        """Garante que a meta de amplitude fique dentro da faixa em que a repetição conta.
+
+        Se a repetição só começa abaixo de 120° e a meta é chegar a 130°, toda repetição
+        contada já atingiu a meta: um agachamento raso não vira repetição e a execução
+        incorreta aparece como correta.
+        """
+        for rule in self.rules:
+            if rule.kind != "repetition":
+                continue
+            rep = self.repetition
+            if rep is None or rep.metric != rule.metric:
+                raise ValueError(
+                    f"Regra {rule.name}: precisa de `repetition` com a métrica {rule.metric}"
+                )
+            if rule.target_max is not None and rep.enter_below is not None:
+                if rep.enter_below <= rule.target_max:
+                    raise ValueError(
+                        f"Regra {rule.name}: enter_below ({rep.enter_below}) precisa ser maior "
+                        f"que target_max ({rule.target_max}), senão a regra nunca dispara"
+                    )
+            elif rule.target_min is not None and rep.enter_above is not None:
+                if rep.enter_above >= rule.target_min:
+                    raise ValueError(
+                        f"Regra {rule.name}: enter_above ({rep.enter_above}) precisa ser menor "
+                        f"que target_min ({rule.target_min}), senão a regra nunca dispara"
+                    )
+            else:
+                raise ValueError(
+                    f"Regra {rule.name}: use target_max com enter_below ou target_min com "
+                    "enter_above"
+                )
+        return self
+
 
 class FallConfig(BaseModel):
     drop_fraction: float = 0.25
@@ -53,6 +89,10 @@ class FallConfig(BaseModel):
     lying_aspect_ratio: float = 1.6
     posture_frames: int = 3
     window_seconds: float = 3.0
+    # caixa a menos desta fração da borda de cima está cortada (pessoa perto da câmera)
+    edge_margin: float = 0.02
+    # com a caixa cortada, a postura só conta se o tronco estiver ao menos tão inclinado
+    tilted_trunk_lean: float = 45.0
 
 
 class Roi(BaseModel):
@@ -73,6 +113,7 @@ class VideoConfig(BaseModel):
     smoothing_frames: int = 5
     min_keypoint_conf: float = 0.3
     min_deviation_seconds: float = 0.5
+    max_gap_frames: int = 2
     exercises: dict[str, Exercise] = Field(default_factory=dict)
     fall: FallConfig = Field(default_factory=FallConfig)
     scenes: dict[str, Scene] = Field(default_factory=dict)
@@ -122,10 +163,34 @@ def _intervals(mask: pd.Series, times: pd.Series, min_seconds: float) -> list[tu
     return intervals
 
 
+def _fill_short_gaps(values: pd.Series, max_frames: int) -> pd.Series:
+    """Interpola só lacunas internas de até `max_frames` quadros; lacunas maiores ficam NaN.
+
+    O `interpolate(limit=...)` do pandas preencheria parte de uma lacuna longa, inventando
+    um trecho de desvio onde o estimador perdeu a pessoa.
+    """
+    if max_frames <= 0:
+        return values
+    missing = values.isna()
+    gap_length = missing.groupby((~missing).cumsum()).transform("sum")
+    filled = values.interpolate(limit_area="inside")
+    return filled.where(missing & (gap_length <= max_frames), values)
+
+
 def frame_findings(
-    rule: Rule, metrics: pd.DataFrame, times: pd.Series, min_seconds: float
+    rule: Rule,
+    metrics: pd.DataFrame,
+    times: pd.Series,
+    min_seconds: float,
+    max_gap_frames: int = 0,
 ) -> list[Finding]:
-    values = metrics[rule.metric]
+    """Trechos em que a métrica sai dos limites da regra por pelo menos `min_seconds`.
+
+    Lacunas de até `max_gap_frames` quadros (keypoint com confiança baixa) são interpoladas
+    antes do limiar: sem isso, uma oclusão de um quadro dividiria um desvio de 0,6 s em dois
+    trechos de 0,25 s, e os dois ficariam abaixo da duração mínima.
+    """
+    values = _fill_short_gaps(metrics[rule.metric], max_gap_frames)
     low = values < rule.min if rule.min is not None else pd.Series(False, index=values.index)
     high = values > rule.max if rule.max is not None else pd.Series(False, index=values.index)
     findings = []
@@ -162,7 +227,11 @@ def frame_findings(
 def count_repetitions(
     config: RepetitionConfig, metrics: pd.DataFrame, times: pd.Series
 ) -> list[Repetition]:
-    """Repetições por histerese: entra ao cruzar `enter` e conclui ao voltar além de `exit`."""
+    """Repetições por histerese: entra ao cruzar `enter` e conclui ao voltar além de `exit`.
+
+    Trechos mais curtos que `min_seconds` não contam: um vídeo que começa com a pessoa
+    terminando de subir geraria uma "repetição" de 0,2 s.
+    """
     values = metrics[config.metric]
     going_down = config.enter_below is not None
     reps: list[Repetition] = []
@@ -183,14 +252,15 @@ def count_repetitions(
             extreme_i = i
         exited = value > config.exit_above if going_down else value < config.exit_below  # type: ignore[operator]
         if exited:
-            reps.append(
-                Repetition(
-                    start=float(times.iloc[start]),
-                    end=float(times.iloc[i]),
-                    extreme_time=float(times.iloc[extreme_i]),
-                    extreme_value=float(values.iloc[extreme_i]),
+            if times.iloc[i] - times.iloc[start] >= config.min_seconds - 1e-9:
+                reps.append(
+                    Repetition(
+                        start=float(times.iloc[start]),
+                        end=float(times.iloc[i]),
+                        extreme_time=float(times.iloc[extreme_i]),
+                        extreme_value=float(values.iloc[extreme_i]),
+                    )
                 )
-            )
             start = extreme_i = None
     return reps
 
@@ -237,18 +307,37 @@ def detect_falls(
     hip_y: pd.Series,
     person_height: float,
     aspect_ratio: pd.Series,
+    trunk_lean: pd.Series | None = None,
+    at_edge: pd.Series | None = None,
 ) -> list[Finding]:
     """Queda = descida rápida do quadril seguida de postura horizontal sustentada.
 
     Sentar, agachar ou deitar devagar não dispara: ou a descida é lenta, ou a pessoa não
     termina na horizontal (largura/altura da caixa abaixo do limiar).
+
+    A proporção da caixa engana quando a caixa é cortada em cima (pessoa perto da câmera, só
+    o tronco no quadro): a caixa fica larga sem a pessoa estar deitada. Com `at_edge`, esses
+    quadros só contam como postura se o `trunk_lean` também estiver inclinado.
+
+    O tronco não serve de veto geral: com a câmera de frente, quem cai na direção dela fica
+    com o tronco quase vertical na imagem (2D), e a borda de baixo também não serve, porque
+    quem está no chão costuma encostar nela. Os dois filtros derrubavam quedas reais no UR Fall.
     """
     if person_height <= 0 or np.isnan(person_height) or len(times) < 3:
         return []
     hip_y = hip_y.interpolate(limit=5)
     drop = descent(times, hip_y, config.descent_seconds) / person_height
+    trunk = (
+        trunk_lean.rolling(config.posture_frames, min_periods=1).median()
+        if trunk_lean is not None
+        else pd.Series(np.nan, index=times.index)
+    )
+    ratio = aspect_ratio
+    if at_edge is not None:
+        tilted = (trunk >= config.tilted_trunk_lean).fillna(False)
+        ratio = aspect_ratio.where(~at_edge.fillna(False).astype(bool) | tilted)
     # mediana só sobre quadros com pessoa detectada: no chão a pose falha em alguns quadros
-    valid = aspect_ratio.dropna()
+    valid = ratio.dropna()
     posture = valid.rolling(config.posture_frames, min_periods=2).median().reindex(times.index)
     lying = posture > config.lying_aspect_ratio
     findings: list[Finding] = []
@@ -278,6 +367,7 @@ def detect_falls(
                 evidence={
                     "hip_drop_fraction_1s": round(max_drop, 2),
                     "posture_aspect_ratio": round(float(posture.iloc[start]), 2),
+                    "trunk_lean": _round_or_none(trunk.iloc[start]),
                     "lying_s": round(float(times.iloc[end] - times.iloc[start]), 2),
                 },
                 recommendation="Acionar a equipe imediatamente para avaliar o paciente.",
@@ -285,6 +375,10 @@ def detect_falls(
         )
         last_end = float(times.iloc[end])
     return findings
+
+
+def _round_or_none(value: float) -> float | None:
+    return None if pd.isna(value) else round(float(value), 1)
 
 
 def point_in_polygon(x: float, y: float, polygon: list[tuple[float, float]]) -> bool:
