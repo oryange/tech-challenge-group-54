@@ -67,7 +67,7 @@ def test_alert_from_event():
     assert alert.alert_type == "vitals.spo2_drop"
     assert alert.dedup_key == "PAC-001:vitals.spo2_drop"
     assert alert.severity is Severity.CRITICAL
-    assert alert.reasons == [event]
+    assert alert.reasons == (event,)
     assert alert.recommended_action == RECOMMENDED_ACTIONS[Severity.CRITICAL]
     assert not alert.acked
 
@@ -91,3 +91,41 @@ def test_alert_requires_at_least_one_reason():
 
 def test_every_severity_has_recommended_action():
     assert set(RECOMMENDED_ACTIONS) == set(Severity)
+
+
+@pytest.mark.parametrize("text", ["high", "HIGH"])
+def test_severity_compares_with_text_in_clinical_order(text):
+    # YAML e .env carregam a severidade como texto; a ordem alfabética daria o resultado errado.
+    # O AlertManager compara `event.severity < min_severity`, com a Severity à esquerda.
+    assert Severity.CRITICAL >= text  # noqa: SIM300
+    assert Severity.CRITICAL > text  # noqa: SIM300
+    assert not Severity.LOW >= text  # noqa: SIM300
+    assert Severity.LOW < text  # noqa: SIM300
+    assert Severity.HIGH <= text  # noqa: SIM300
+    # e com o texto à esquerda (operador refletido)
+    assert text <= Severity.CRITICAL
+    assert text > Severity.LOW
+
+
+def test_severity_rejects_unknown_text():
+    with pytest.raises(ValueError, match="urgente"):
+        _ = Severity.HIGH < "urgente"
+
+
+def test_alert_is_immutable():
+    alert = Alert.from_event(make_event())
+    with pytest.raises(ValidationError):
+        alert.acked = True
+
+
+def test_event_evidence_is_deeply_immutable():
+    event = make_event()
+    with pytest.raises(TypeError):
+        event.evidence["spo2"] = 50  # type: ignore[index]
+    with pytest.raises(AttributeError):
+        event.evidence["nested"]["window"].append(4)  # type: ignore[index, union-attr]
+    # a serialização continua em JSON comum (dict e list)
+    assert event.model_dump(mode="json")["evidence"] == {
+        "spo2": 88,
+        "nested": {"window": [1, 2, 3]},
+    }

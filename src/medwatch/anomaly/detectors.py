@@ -29,7 +29,9 @@ class ThresholdBands:
 
 
 def _mad(window: np.ndarray) -> float:
-    return float(np.median(np.abs(window - np.median(window))))
+    # nanmedian: a janela traz o NaN do shift(1) (e lacunas de medição); com np.median o MAD
+    # ficaria NaN enquanto esse ponto estivesse na janela, e o detector, cego nas primeiras horas
+    return float(np.nanmedian(np.abs(window - np.nanmedian(window))))
 
 
 @dataclass(frozen=True)

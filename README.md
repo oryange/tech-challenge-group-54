@@ -115,19 +115,21 @@ Detecção de anomalias em sinais vitais do **MIMIC-IV Clinical Database Demo** 
 ```bash
 medwatch data download                               # ~6 MB, confere o SHA-256 de cada arquivo
 medwatch vitals list                                 # pacientes disponíveis (subject_id)
-medwatch vitals analyze --patient 10004235           # eventos + outputs/reports/vitals_<id>.json/.png
+medwatch vitals analyze --patient 10004235           # eventos + outputs/reports/vitals_<id>.json e vitals_<id>_<stay>.png
 medwatch vitals analyze --patient 10004235 --alert   # envia os eventos ao AlertManager
 medwatch vitals evaluate                             # precision/recall/F1 com anomalias injetadas
 ```
 
-Resultado da avaliação (anomalias sintéticas injetadas em 140 internações reais, seed 42):
+Resultado da avaliação (283 anomalias sintéticas injetadas em 116 internações reais, as que têm pelo menos 24 h de dados, seed 42):
 
 | Método | Precision | Recall | F1 |
 |---|---|---|---|
-| z-score robusto | 0,985 | 0,714 | 0,828 |
-| Isolation Forest | 0,983 | 0,194 | 0,325 |
-| NEWS2 | 0,788 | 0,173 | 0,284 |
-| **Combinado** | **0,945** | **0,777** | **0,853** |
+| z-score robusto | 1,000 | 0,767 | 0,868 |
+| Isolation Forest | 0,949 | 0,191 | 0,318 |
+| NEWS2 | 0,753 | 0,187 | 0,300 |
+| **Combinado** | **0,940** | **0,830** | **0,882** |
+
+A precision é **de injeção**, não clínica: mede quantas das detecções novas, que surgiram com a injeção, coincidem com uma anomalia injetada. A precision clínica real exigiria rótulos de especialistas (ver [relatório](docs/relatorio_vitais.md#avaliação)).
 
 Limiares clínicos e parâmetros dos detectores ficam em [configs/thresholds.yaml](configs/thresholds.yaml).
 
@@ -172,6 +174,8 @@ O cenário cobre os comportamentos do gerenciador:
 - alerta repetido (mesmo paciente e tipo) dentro do cooldown é **suprimido**;
 - piora de severidade (HIGH → CRITICAL) **sempre passa**, mesmo dentro do cooldown;
 - evento abaixo de `MEDWATCH_ALERT_MIN_SEVERITY` é **ignorado**.
+
+Fora do cenário, vale também: se nenhum canal conseguir entregar o alerta, o cooldown não é registrado e a próxima repetição é enviada normalmente. O webhook não recebe o `evidence` dos eventos (só tipo, score e horário); o registro completo fica no `alerts.jsonl`.
 
 **Receber os alertas no celular/chat (opcional):** crie um webhook e configure no `.env`:
 

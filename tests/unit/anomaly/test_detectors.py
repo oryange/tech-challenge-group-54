@@ -97,3 +97,14 @@ def test_find_episodes_groups_nearby_flags_and_finds_peak():
 
 def test_find_episodes_empty():
     assert find_episodes(hourly([False, False]), hourly([0, 0])) == []
+
+
+def test_zscore_sees_spike_in_first_hours_of_stay():
+    """O NaN do shift(1) não pode cegar o detector enquanto estiver na janela (12 h)."""
+    rng = np.random.default_rng(0)
+    values = rng.normal(80, 2, 24)
+    values[6] = 140
+    detector = RobustZScore(window="12h", min_periods=4, threshold=3.5, min_mad=1.0)
+    z = detector.score(hourly(values))
+    assert z.iloc[4:12].notna().all()
+    assert detector.flags(z).iloc[6]

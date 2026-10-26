@@ -1,7 +1,7 @@
 import asyncio
 from datetime import UTC, datetime, timedelta
 
-from medwatch.core.alerts import AlertManager
+from medwatch.core.alerts import AlertManager, DispatchOutcome
 from medwatch.core.bus import InMemoryEventBus
 from medwatch.core.events import Alert, Severity
 from tests.unit.core.test_events import make_event
@@ -22,6 +22,35 @@ class BrokenChannel:
 
     async def send(self, alert: Alert) -> None:
         raise RuntimeError("canal fora do ar")
+
+
+class FlakyChannel(RecordingChannel):
+    name = "flaky"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.down = False
+
+    async def send(self, alert: Alert) -> None:
+        if self.down:
+            raise RuntimeError("canal fora do ar")
+        await super().send(alert)
+
+
+class GatedChannel(RecordingChannel):
+    """Segura a entrega de um tipo de alerta até `release` ser liberado (webhook lento)."""
+
+    name = "gated"
+
+    def __init__(self, release: asyncio.Event, blocked_type: str) -> None:
+        super().__init__()
+        self._release = release
+        self._blocked = blocked_type
+
+    async def send(self, alert: Alert) -> None:
+        if alert.alert_type.endswith(f".{self._blocked}"):
+            await self._release.wait()
+        await super().send(alert)
 
 
 class FakeClock:
@@ -102,6 +131,85 @@ def test_consume_filters_by_min_severity_and_counts():
     stats = asyncio.run(scenario(channel))
     assert (stats.sent, stats.suppressed, stats.ignored) == (2, 1, 1)
     assert [a.alert_type for a in channel.alerts] == ["vitals.medium", "vitals.critical"]
+
+
+def test_failed_delivery_does_not_start_cooldown():
+    """Com todos os canais fora, a repetição do alerta precisa ser tentada de novo."""
+    manager, _ = make_manager(BrokenChannel())
+    assert asyncio.run(manager.deliver(alert())) is DispatchOutcome.FAILED
+    assert asyncio.run(manager.dispatch(alert())) is False
+
+    channel = RecordingChannel()
+    manager._channels = [channel]  # o canal volta
+    assert asyncio.run(manager.dispatch(alert())) is True
+    assert len(channel.alerts) == 1
+
+
+def test_failed_escalation_keeps_previous_cooldown():
+    channel = FlakyChannel()
+    manager, _ = make_manager(channel)
+    assert asyncio.run(manager.dispatch(alert(Severity.HIGH))) is True
+    channel.down = True
+    assert asyncio.run(manager.deliver(alert(Severity.CRITICAL))) is DispatchOutcome.FAILED
+    channel.down = False
+    # o HIGH ainda está no cooldown; o CRITICAL, que não foi entregue, passa de novo
+    assert asyncio.run(manager.dispatch(alert(Severity.HIGH))) is False
+    assert asyncio.run(manager.dispatch(alert(Severity.CRITICAL))) is True
+
+
+def test_consume_counts_failed_deliveries():
+    async def scenario():
+        bus = InMemoryEventBus()
+        manager, _ = make_manager(BrokenChannel())
+        consumer = asyncio.create_task(manager.consume(bus.subscribe(), Severity.MEDIUM))
+        await bus.publish(make_event(severity=Severity.HIGH))
+        await bus.close()
+        return await consumer
+
+    stats = asyncio.run(scenario())
+    assert (stats.sent, stats.failed) == (0, 1)
+
+
+def test_consume_does_not_queue_critical_behind_slow_delivery():
+    """Um webhook lento num alerta não pode atrasar a entrega de um CRITICAL seguinte."""
+
+    async def scenario():
+        release = asyncio.Event()
+        channel = GatedChannel(release, blocked_type="slow")
+        bus = InMemoryEventBus()
+        manager, _ = make_manager(channel)
+        consumer = asyncio.create_task(manager.consume(bus.subscribe(), Severity.MEDIUM))
+        await bus.publish(make_event(severity=Severity.HIGH, type="slow"))
+        await bus.publish(make_event(severity=Severity.CRITICAL, type="fall"))
+        await bus.close()
+        for _ in range(20):
+            await asyncio.sleep(0)
+        delivered_before_release = [a.alert_type for a in channel.alerts]
+        release.set()
+        stats = await consumer
+        return delivered_before_release, stats
+
+    delivered, stats = asyncio.run(scenario())
+    assert delivered == ["vitals.fall"]
+    assert stats.sent == 2
+
+
+def test_min_severity_as_text_is_respected():
+    async def scenario(channel):
+        bus = InMemoryEventBus()
+        manager, _ = make_manager(channel)
+        consumer = asyncio.create_task(
+            manager.consume(bus.subscribe(), "high")  # type: ignore[arg-type]
+        )
+        await bus.publish(make_event(severity=Severity.CRITICAL, type="critical"))
+        await bus.publish(make_event(severity=Severity.MEDIUM, type="medium"))
+        await bus.close()
+        return await consumer
+
+    channel = RecordingChannel()
+    stats = asyncio.run(scenario(channel))
+    assert (stats.sent, stats.ignored) == (1, 1)
+    assert [a.alert_type for a in channel.alerts] == ["vitals.critical"]
 
 
 def test_event_time_cooldown_for_replay():

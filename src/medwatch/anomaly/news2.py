@@ -6,6 +6,10 @@ from medwatch.anomaly.config import NEWS2_VITALS, VitalsConfig
 from medwatch.anomaly.detectors import ThresholdBands
 from medwatch.core.events import Severity
 
+# casas decimais com que a tabela do RCP é escrita: a temperatura com 1 casa, o resto inteiro.
+# Arredondar antes de pontuar evita que 38,04 °C (registrado como 38,0) caia na faixa de 1 ponto.
+TABLE_DECIMALS: dict[str, int] = {"temp": 1}
+
 
 def compute_news2(frame: pd.DataFrame, config: VitalsConfig) -> pd.DataFrame:
     """Subscores por parâmetro, total e severidade.
@@ -16,6 +20,7 @@ def compute_news2(frame: pd.DataFrame, config: VitalsConfig) -> pd.DataFrame:
     out = pd.DataFrame(index=frame.index)
     for vital in NEWS2_VITALS:
         series = frame[vital] if vital in frame else pd.Series(float("nan"), index=frame.index)
+        series = series.round(TABLE_DECIMALS.get(vital, 0))
         out[f"news2_{vital}"] = ThresholdBands(config.news2.bands(vital)).score(series)
 
     if "on_oxygen" in frame:

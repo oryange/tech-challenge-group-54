@@ -7,13 +7,14 @@ from medwatch.core.alerts.channels import (
     JsonlChannel,
     WebhookChannel,
 )
-from medwatch.core.alerts.manager import AlertManager, DispatchStats
+from medwatch.core.alerts.manager import AlertManager, DispatchOutcome, DispatchStats
 
 __all__ = [
     "AlertChannel",
     "AlertManager",
     "ChannelError",
     "ConsoleChannel",
+    "DispatchOutcome",
     "DispatchStats",
     "JsonlChannel",
     "WebhookChannel",

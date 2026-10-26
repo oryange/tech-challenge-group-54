@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 import numpy as np
+import pandas as pd
 
 from medwatch.anomaly.vitals import VitalsAnalyzer
 from medwatch.core.events import Severity, Source
@@ -92,3 +93,35 @@ def test_analyze_accepts_modified_raw_without_touching_stay():
     analysis = analyzer().analyze(stay, raw=modified)
     assert analysis.frame.loc[modified.index[30], "hr"] == 160
     assert not np.isclose(stay.raw.loc[stay.raw.index[30], "hr"], 160)
+
+
+def test_news2_rearm_uses_lowest_band_seen_below():
+    """CRITICAL → 6 h em LOW → HIGH: a piora LOW → HIGH precisa gerar evento."""
+    raw = make_raw(hours=30)
+    critical = {"rr": 26, "spo2": 91, "sbp": 95, "hr": 125}  # 3 + 3 + 2 + 2 = 10
+    low = {"rr": 16, "spo2": 97, "sbp": 120, "hr": 95}  # só a FC pontua (1)
+    high = {"rr": 22, "hr": 105, "spo2": 94, "sbp": 105}  # 2 + 1 + 1 + 1 = 5
+    for (start, end), values in [((10, 12), critical), ((12, 18), low), ((18, 22), high)]:
+        for vital, value in values.items():
+            raw.loc[raw.index[start:end], vital] = value
+    events = [e for e in analyzer().analyze(make_stay(raw)).events if e.type == "news2_rise"]
+    serious = [(e.timestamp.hour, e.severity) for e in events if e.severity >= Severity.HIGH]
+    assert serious == [(10, Severity.CRITICAL), (18, Severity.HIGH)]
+
+
+def test_iforest_severity_uses_news2_as_floor(monkeypatch):
+    """Anomalia multivariada pouco rara, mas com NEWS2 alto, não pode sair LOW."""
+    raw = make_raw()
+    worse = {"rr": 26, "spo2": 91, "sbp": 95, "hr": 125}  # NEWS2 10 → CRITICAL
+    for vital, value in worse.items():
+        raw.loc[raw.index[30], vital] = value
+    an = analyzer()
+    scores = pd.Series(0.1, index=raw.index)
+    scores.iloc[30] = 0.51  # acima de 0.5 (anômalo), abaixo do corte de MEDIUM
+    monkeypatch.setattr(an.iforest, "score", lambda features: scores)
+    an._fitted = True
+
+    events = [e for e in an.analyze(make_stay(raw)).events if e.type == "multivariate_anomaly"]
+    assert len(events) == 1
+    assert events[0].severity is Severity.CRITICAL
+    assert events[0].evidence["iforest_severity"] == "low"
