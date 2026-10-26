@@ -203,6 +203,8 @@ def analyze(
             f"Alertas enviados: {stats.sent} · suprimidos (cooldown): {stats.suppressed} · "
             f"ignorados (< {settings.alert_min_severity}): {stats.ignored}"
         )
+        if stats.failed:
+            typer.echo(f"Sem entrega em nenhum canal: {stats.failed}", err=True)
 
 
 @app.command("synth-samples")
