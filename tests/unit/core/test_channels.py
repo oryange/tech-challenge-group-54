@@ -97,3 +97,78 @@ def test_webhook_retries_on_network_error():
     channel = WebhookChannel(URL, backoff=0, transport=httpx.MockTransport(handler))
     asyncio.run(channel.send(sample_alert()))
     assert calls["n"] == 2
+
+
+def test_generic_webhook_does_not_send_evidence():
+    requests: list[httpx.Request] = []
+    channel = WebhookChannel(URL, fmt="generic", transport=recording_transport([200], requests))
+    asyncio.run(channel.send(sample_alert()))
+    body = json.loads(requests[0].content)
+    reason = body["reasons"][0]
+    assert "evidence" not in reason and "artifacts" not in reason
+    assert reason["type"] == "spo2_drop"
+    assert "window" not in json.dumps(body)
+
+
+@pytest.mark.parametrize("fmt", ["slack", "discord", "teams"])
+def test_text_webhooks_do_not_send_evidence(fmt):
+    requests: list[httpx.Request] = []
+    channel = WebhookChannel(URL, fmt=fmt, transport=recording_transport([200], requests))
+    asyncio.run(channel.send(sample_alert()))
+    assert "window" not in requests[0].content.decode()
+
+
+def sleeps_recorded(monkeypatch) -> list[float]:
+    sleeps: list[float] = []
+
+    async def fake_sleep(seconds: float) -> None:
+        sleeps.append(seconds)
+
+    monkeypatch.setattr("medwatch.core.alerts.channels.asyncio.sleep", fake_sleep)
+    return sleeps
+
+
+def throttled_transport(retry_after: str, requests: list[httpx.Request]):
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if len(requests) == 1:
+            return httpx.Response(429, headers={"Retry-After": retry_after})
+        return httpx.Response(200)
+
+    return httpx.MockTransport(handler)
+
+
+def test_webhook_honors_retry_after_on_429(monkeypatch):
+    sleeps = sleeps_recorded(monkeypatch)
+    requests: list[httpx.Request] = []
+    channel = WebhookChannel(URL, backoff=0.5, transport=throttled_transport("3", requests))
+    asyncio.run(channel.send(sample_alert()))
+    assert len(requests) == 2
+    assert sleeps == [3.0]
+
+
+def test_webhook_caps_retry_after(monkeypatch):
+    sleeps = sleeps_recorded(monkeypatch)
+    requests: list[httpx.Request] = []
+    channel = WebhookChannel(
+        URL, backoff=0.5, max_retry_after=10, transport=throttled_transport("3600", requests)
+    )
+    asyncio.run(channel.send(sample_alert()))
+    assert sleeps == [10]
+
+
+def test_webhook_accepts_retry_after_as_http_date(monkeypatch):
+    sleeps = sleeps_recorded(monkeypatch)
+    requests: list[httpx.Request] = []
+    past = "Wed, 21 Oct 2015 07:28:00 GMT"  # data já passada: não espera além do backoff
+    channel = WebhookChannel(URL, backoff=0.5, transport=throttled_transport(past, requests))
+    asyncio.run(channel.send(sample_alert()))
+    assert sleeps == [0.5]
+
+
+def test_webhook_ignores_invalid_retry_after(monkeypatch):
+    sleeps = sleeps_recorded(monkeypatch)
+    requests: list[httpx.Request] = []
+    channel = WebhookChannel(URL, backoff=0.5, transport=throttled_transport("logo", requests))
+    asyncio.run(channel.send(sample_alert()))
+    assert sleeps == [0.5]

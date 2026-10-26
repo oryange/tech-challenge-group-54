@@ -70,23 +70,23 @@ Comece o PR 4 cedo: provisionar o Azure (assinatura, F0, termos de IA Responsáv
 ## PR 2 — Core: eventos, barramento e alertas
 
 **Código**
-- [ ] `core/events.py`: `Source`, `Severity` (ordenável), `ClinicalEvent`, `Alert` (pydantic, uuid, timestamps UTC timezone-aware)
-- [ ] `score` validado em [0, 1]; `evidence` serializável; `artifacts: list[Path]`
-- [ ] `core/bus.py`: protocolo `EventBus` (`publish`, `subscribe`) e `InMemoryEventBus` (asyncio.Queue, fan-out)
-- [ ] `core/alerts/`: `AlertManager` com dedup (paciente+tipo), cooldown configurável e canais `ConsoleChannel`, `JsonlChannel` (`outputs/alerts/alerts.jsonl`), `WebhookChannel` (Teams/Slack, timeout e retry)
-- [ ] Falha num canal não derruba os outros
+- [x] `core/events.py`: `Source`, `Severity` (ordenável), `ClinicalEvent`, `Alert` (pydantic, uuid, timestamps UTC timezone-aware)
+- [x] `score` validado em [0, 1]; `evidence` serializável; `artifacts: list[Path]`
+- [x] `core/bus.py`: protocolo `EventBus` (`publish`, `subscribe`) e `InMemoryEventBus` (asyncio.Queue, fan-out)
+- [x] `core/alerts/`: `AlertManager` com dedup (paciente+tipo), cooldown configurável e canais `ConsoleChannel`, `JsonlChannel` (`outputs/alerts/alerts.jsonl`), `WebhookChannel` (Teams/Slack, timeout e retry)
+- [x] Falha num canal não derruba os outros
 
 **Dependências**
-- [ ] `httpx` no core; nenhuma dependência pesada
+- [x] `httpx` no core; nenhuma dependência pesada
 
 **Testes**
-- [ ] Round-trip de serialização de `ClinicalEvent` e `Alert`
-- [ ] Bus: dois subscribers recebem o mesmo evento
-- [ ] AlertManager: dedup no cooldown, reenvio depois, canal com exceção não bloqueia os demais
-- [ ] Webhook com `httpx.MockTransport` (sem rede)
+- [x] Round-trip de serialização de `ClinicalEvent` e `Alert`
+- [x] Bus: dois subscribers recebem o mesmo evento
+- [x] AlertManager: dedup no cooldown, reenvio depois, canal com exceção não bloqueia os demais
+- [x] Webhook com `httpx.MockTransport` (sem rede)
 
 **Docs**
-- [ ] `docs/architecture.md` atualizado; `docs/adr/0001-late-fusion-event-driven.md`
+- [x] `docs/architecture.md` atualizado; `docs/adr/0001-late-fusion-event-driven.md`
 
 **Validação**
 - [ ] `medwatch alerts demo` emite alerta fake no console, em `alerts.jsonl` (JSON válido por linha) e no webhook de teste (screenshot)
@@ -94,8 +94,8 @@ Comece o PR 4 cedo: provisionar o Azure (assinatura, F0, termos de IA Responsáv
 ## PR 3 — Anomalias em sinais vitais
 
 **Código**
-- [ ] `scripts/download_datasets.py` baixa MIMIC-IV demo e/ou BIDMC, verifica checksum, idempotente
-- [ ] `anomaly/detectors.py`: `ThresholdRule`, `RobustZScore` (mediana/MAD por paciente, janela rolante), `IsolationForestDetector` (features de janela: média, desvio, slope)
+- [ ] `medwatch data download` baixa o MIMIC-IV demo, verifica SHA-256 e é idempotente (BIDMC fica para o simulador do PR 7)
+- [ ] `anomaly/detectors.py`: `ThresholdRule`, `RobustZScore` (mediana/MAD por paciente, janela rolante), `IsolationForestDetector` (features: valor do momento e variação de 1 h; média, desvio e slope em janela ficaram como evolução, ver `docs/relatorio_vitais.md`)
 - [ ] `anomaly/vitals.py`: normaliza itemids MIMIC (HR, SBP, DBP, SpO2, RR, Temp), calcula NEWS2, emite `ClinicalEvent(source=vitals)`
 - [ ] Limiares em `configs/thresholds.yaml` com referência clínica
 - [ ] Tratamento de gaps e artefatos de sensor (SpO2 = 0 é artefato)
@@ -151,7 +151,7 @@ Comece o PR 4 cedo: provisionar o Azure (assinatura, F0, termos de IA Responsáv
 
 **Código**
 - [ ] `video/pose/keypoints.py`: esquema comum (BODY_25 ↔ COCO-17) com confiança por ponto
-- [ ] `PoseEstimator` (ABC), `YoloPoseEstimator` (padrão), `OpenPoseEstimator` (`pyopenpose` no `Dockerfile.openpose` ou leitura dos JSON do binário)
+- [ ] `PoseEstimator` (ABC), `YoloPoseEstimator` (padrão), `OpenPoseEstimator` (rede da CMU em PyTorch) e leitura dos JSON do binário oficial
 - [ ] `objects.py`: YOLOv8 com tracking (ByteTrack) e ROIs críticas em `video_rules.yaml`
 - [ ] `rules.py`: ângulos vs. faixa esperada, assimetria, compensação de tronco, queda (velocidade do quadril + razão de aspecto), invasão de ROI
 - [ ] Amostragem de frames configurável e suavização temporal dos keypoints
@@ -160,7 +160,7 @@ Comece o PR 4 cedo: provisionar o Azure (assinatura, F0, termos de IA Responsáv
 
 **Dependências / Infra**
 - [ ] Seção "Vídeo" do `requirements.txt` revisada; pesos baixados em `models/` sob demanda
-- [ ] `docker/Dockerfile.openpose` documentado
+- [ ] Decisão sobre o OpenPose registrada em ADR (OpenCV 5 sem Caffe; rede portada para PyTorch) e avisos de licença em `THIRD_PARTY_NOTICES.md`
 
 **Testes**
 - [ ] Ângulos com keypoints sintéticos (90°, 180°)

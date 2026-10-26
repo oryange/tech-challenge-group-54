@@ -1,7 +1,8 @@
 """Canais de entrega de alertas: console, arquivo JSONL e webhook (Teams/Slack/Discord)."""
 
 import asyncio
-import json
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Literal, Protocol
 
@@ -19,6 +20,24 @@ _LOG_LEVELS: dict[Severity, str] = {
     Severity.HIGH: "ERROR",
     Severity.CRITICAL: "CRITICAL",
 }
+
+
+def _retry_after_seconds(response: httpx.Response) -> float | None:
+    """Lê o `Retry-After` (segundos ou data HTTP) que Discord e Slack mandam no 429."""
+    value = response.headers.get("Retry-After")
+    if not value:
+        return None
+    try:
+        return max(0.0, float(value))
+    except ValueError:
+        pass
+    try:
+        when = parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=UTC)
+    return max(0.0, (when - datetime.now(UTC)).total_seconds())
 
 
 class ChannelError(RuntimeError):
@@ -68,7 +87,15 @@ class JsonlChannel:
 
 
 class WebhookChannel:
-    """POST do alerta em um webhook. Repete em erro de rede, 429 e 5xx com backoff exponencial."""
+    """POST do alerta em um webhook. Repete em erro de rede, 429 e 5xx com backoff exponencial.
+
+    No 429/503 respeita o `Retry-After` do servidor, limitado a `max_retry_after` segundos para
+    um servidor mal configurado não segurar o alerta indefinidamente.
+
+    Nenhum formato envia o `evidence` dos eventos: o webhook sai do ambiente do hospital e o
+    `evidence` pode conter trechos clínicos (ex.: termos da transcrição no áudio). O registro
+    completo fica no `alerts.jsonl`.
+    """
 
     name = "webhook"
 
@@ -79,6 +106,7 @@ class WebhookChannel:
         timeout: float = 5.0,
         retries: int = 3,
         backoff: float = 0.5,
+        max_retry_after: float = 30.0,
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self._url = url
@@ -86,6 +114,7 @@ class WebhookChannel:
         self._timeout = timeout
         self._retries = retries
         self._backoff = backoff
+        self._max_retry_after = max_retry_after
         self._transport = transport
 
     def build_payload(self, alert: Alert) -> dict[str, object]:
@@ -123,17 +152,21 @@ class WebhookChannel:
                     }
                 ],
             }
-        return json.loads(alert.model_dump_json())
+        return alert.model_dump(
+            mode="json", exclude={"reasons": {"__all__": {"evidence", "artifacts"}}}
+        )
 
     async def send(self, alert: Alert) -> None:
         payload = self.build_payload(alert)
         reason = "nenhuma tentativa"
+        retry_after: float | None = None
         async with httpx.AsyncClient(transport=self._transport, timeout=self._timeout) as client:
             for attempt in range(1, self._retries + 1):
                 try:
                     response = await client.post(self._url, json=payload)
                 except httpx.TransportError as exc:
                     reason = type(exc).__name__
+                    retry_after = None
                 else:
                     if response.is_success:
                         return
@@ -142,9 +175,17 @@ class WebhookChannel:
                             f"Webhook recusou o alerta (HTTP {response.status_code})"
                         )
                     reason = f"HTTP {response.status_code}"
+                    retry_after = _retry_after_seconds(response)
                 if attempt < self._retries:
+                    delay = self._backoff * 2 ** (attempt - 1)
+                    if retry_after is not None:
+                        delay = min(max(delay, retry_after), self._max_retry_after)
                     logger.warning(
-                        "Webhook falhou ({}), tentativa {}/{}", reason, attempt, self._retries
+                        "Webhook falhou ({}), tentativa {}/{}; nova tentativa em {:.1f} s",
+                        reason,
+                        attempt,
+                        self._retries,
+                        delay,
                     )
-                    await asyncio.sleep(self._backoff * 2 ** (attempt - 1))
+                    await asyncio.sleep(delay)
         raise ChannelError(f"Webhook indisponível após {self._retries} tentativas ({reason})")

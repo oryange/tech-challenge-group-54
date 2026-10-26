@@ -11,6 +11,9 @@ import typer
 from loguru import logger
 
 from medwatch.commands import audio as audio_commands
+from medwatch.commands import data as data_commands
+from medwatch.commands import video as video_commands
+from medwatch.commands import vitals as vitals_commands
 from medwatch.config import Settings, get_settings
 from medwatch.log import setup_logging
 
@@ -18,6 +21,9 @@ app = typer.Typer(help="MedWatch - monitoramento multimodal de pacientes", no_ar
 alerts_app = typer.Typer(help="Alertas para a equipe médica.", no_args_is_help=True)
 app.add_typer(alerts_app, name="alerts")
 app.add_typer(audio_commands.app, name="audio")
+app.add_typer(data_commands.app, name="data")
+app.add_typer(vitals_commands.app, name="vitals")
+app.add_typer(video_commands.app, name="video")
 
 OPTIONAL_LIBS = {
     "lib.ultralytics": "ultralytics",
@@ -140,4 +146,6 @@ def alerts_demo() -> None:
         f"\nAlertas enviados: {stats.sent} · suprimidos (cooldown): {stats.suppressed} · "
         f"ignorados (< {settings.alert_min_severity}): {stats.ignored}"
     )
+    if stats.failed:
+        typer.echo(f"Sem entrega em nenhum canal: {stats.failed}", err=True)
     typer.echo(f"Histórico: {settings.alerts_file}")

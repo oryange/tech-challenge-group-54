@@ -1,0 +1,72 @@
+# Limiares clínicos e parâmetros dos detectores de sinais vitais.
+#
+# Referências:
+# - Royal College of Physicians. National Early Warning Score (NEWS) 2, 2017.
+#   https://www.rcp.ac.uk/improving-care/resources/national-early-warning-score-news-2/
+# - Faixas de validade fisiológica: valores fora delas são tratados como artefato de sensor
+#   ou erro de registro (ex.: HR = 0 com o paciente monitorado, SpO2 = 29%).
+
+grid: 1h            # grade temporal: os registros do MIMIC-IV são aproximadamente horários
+max_ffill_hours: 4  # por quanto tempo um valor medido continua válido para o NEWS2
+
+# Faixas de validade: fora delas o valor é descartado como artefato.
+validity:
+  hr:   [20, 250]
+  sbp:  [40, 260]
+  dbp:  [15, 180]
+  rr:   [4, 60]
+  spo2: [50, 100]
+  temp: [30, 43]
+
+# NEWS2: cada parâmetro tem faixas [limite_superior_inclusivo, pontos]; a última faixa usa null
+# como "acima de tudo". Escala 1 de SpO2 (pacientes sem DPOC hipercápnica).
+news2:
+  rr:   [[8, 3], [11, 1], [20, 0], [24, 2], [null, 3]]
+  spo2: [[91, 3], [93, 2], [95, 1], [null, 0]]
+  sbp:  [[90, 3], [100, 2], [110, 1], [219, 0], [null, 3]]
+  hr:   [[40, 3], [50, 1], [90, 0], [110, 1], [130, 2], [null, 3]]
+  temp: [[35.0, 3], [36.0, 1], [38.0, 0], [39.0, 1], [null, 2]]
+  oxygen_points: 2        # paciente em oxigênio suplementar
+  consciousness_points: 3 # não alerta (aproximação: abertura ocular < 4 na escala de Glasgow)
+
+# Mapeamento do NEWS2 para a severidade do alerta (faixas de resposta clínica do RCP):
+# 0 → info · 1–4 → low · algum parâmetro com 3 pontos → medium · 5–6 → high · ≥ 7 → critical
+news2_severity:
+  low: 1
+  red_single_parameter: 3
+  high: 5
+  critical: 7
+
+# Histerese: depois de alertar uma faixa, só alerta de novo uma subida se o paciente ficou
+# abaixo dela por este tempo. Evita alertas a cada oscilação entre faixas vizinhas.
+news2_rearm: 6h
+
+# Desvio em relação ao próprio histórico do paciente (mediana/MAD causal, sem olhar o futuro).
+robust_zscore:
+  window: 12h
+  min_periods: 4
+  # temperatura é registrada a cada ~4 h: em 12 h não haveria medições suficientes
+  window_by_vital:
+    temp: 24h
+  threshold: 3.5
+  # piso do MAD por sinal: evita z-scores enormes quando a série fica quase constante
+  min_mad:
+    hr: 3.0
+    sbp: 5.0
+    dbp: 4.0
+    rr: 1.5
+    spo2: 1.0
+    temp: 0.2
+
+# Detector multivariado treinado na população (todas as internações do dataset).
+isolation_forest:
+  contamination: 0.02
+  n_estimators: 200
+  random_state: 42
+  # score > 0.5 é anômalo. Cortes calibrados nos percentis do MIMIC-IV demo:
+  # p99 ≈ 0.52 e p99.9 ≈ 0.58 (ver docs/relatorio_vitais.md)
+  severity_medium: 0.54
+  severity_high: 0.58
+
+# Pontos sinalizados separados por até este intervalo formam um único episódio.
+episode_max_gap: 2h

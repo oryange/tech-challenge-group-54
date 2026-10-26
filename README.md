@@ -13,9 +13,9 @@ Sistema que analisa e funde dados multimodais (vídeo, áudio e texto/sinais vit
 |---|---|
 | Setup / infraestrutura (PR 1) | ✅ |
 | Core: eventos e alertas (PR 2) | ✅ |
-| Sinais vitais (PR 3) | ⏳ |
+| Sinais vitais (PR 3) | ✅ |
 | Áudio + Azure (PR 4) | ⏳ |
-| Vídeo: YOLOv8 + OpenPose (PR 5) | ⏳ |
+| Vídeo: YOLOv8 + OpenPose (PR 5) | ✅ |
 | Prescrições e movimentação (PR 6) | ⏳ |
 | Fusão, API e Dashboard (PR 7) | ⏳ |
 | Relatório técnico e demo (PR 8) | ⏳ |
@@ -108,6 +108,58 @@ Para remover tudo ao final: apague o grupo de recursos no portal (ou `az group d
 | `AZURE_LANGUAGE_ENDPOINT` | — | Endpoint do recurso Language |
 | `AZURE_LANGUAGE_KEY` | — | Chave do recurso Language |
 
+## Sinais vitais
+
+Detecção de anomalias em sinais vitais do **MIMIC-IV Clinical Database Demo** (PhysioNet, acesso aberto, 100 pacientes), combinando três técnicas: **NEWS2** (risco clínico absoluto), **z-score robusto** (desvio em relação ao histórico do próprio paciente) e **Isolation Forest** (combinação rara de sinais na população). Método, calibração e resultados em [docs/relatorio_vitais.md](docs/relatorio_vitais.md).
+
+```bash
+medwatch data download                               # ~6 MB, confere o SHA-256 de cada arquivo
+medwatch vitals list                                 # pacientes disponíveis (subject_id)
+medwatch vitals analyze --patient 10004235           # eventos + outputs/reports/vitals_<id>.json e vitals_<id>_<stay>.png
+medwatch vitals analyze --patient 10004235 --alert   # envia os eventos ao AlertManager
+medwatch vitals evaluate                             # precision/recall/F1 com anomalias injetadas
+```
+
+Resultado da avaliação (283 anomalias sintéticas injetadas em 116 internações reais, as que têm pelo menos 24 h de dados, seed 42):
+
+| Método | Precision | Recall | F1 |
+|---|---|---|---|
+| z-score robusto | 1,000 | 0,767 | 0,868 |
+| Isolation Forest | 0,949 | 0,191 | 0,318 |
+| NEWS2 | 0,753 | 0,187 | 0,300 |
+| **Combinado** | **0,940** | **0,830** | **0,882** |
+
+A precision é **de injeção**, não clínica: mede quantas das detecções novas, que surgiram com a injeção, coincidem com uma anomalia injetada. A precision clínica real exigiria rótulos de especialistas (ver [relatório](docs/relatorio_vitais.md#avaliação)).
+
+Limiares clínicos e parâmetros dos detectores ficam em [configs/thresholds.yaml](configs/thresholds.yaml).
+
+## Vídeo clínico
+
+Análise postural com **YOLOv8-pose** (padrão) ou **OpenPose** (rede original da CMU em PyTorch), detecção de objetos e áreas críticas com **YOLOv8 + ByteTrack**, contagem de repetições, desvios de exercício, **detecção de quedas** e relatório automático. Método e resultados em [docs/relatorio_video.md](docs/relatorio_video.md).
+
+```bash
+medwatch data download --dataset videos      # vídeos de exemplo (licença aberta)
+medwatch video analyze agachamento_unipodal.webm --exercise agachamento_unipodal
+medwatch video analyze agachamento_barra.webm --exercise agachamento --backend openpose
+medwatch video analyze urfall_queda_01.mp4 --alert          # queda → alerta CRITICAL
+medwatch video analyze meu_video.mp4 --scene quarto         # áreas críticas (ativa objetos)
+medwatch video analyze meu_video.mp4 --start-time 2026-10-19T14:30:00-03:00  # horário real
+
+medwatch data download --dataset urfall      # 40 sequências do UR Fall Dataset
+medwatch video evaluate-falls                # acurácia: calibração 01–10, validação 11–20
+```
+
+Exercícios disponíveis: `agachamento`, `agachamento_unipodal` e `elevacao_bracos`. Limiares, cenas e áreas críticas ficam em [configs/video_rules.yaml](configs/video_rules.yaml). Os pesos dos modelos são baixados para `models/` no primeiro uso, com SHA-256 conferido (YOLOv8n, YOLOv8n-pose e OpenPose).
+
+Cada análise gera em `outputs/reports/video/` um relatório HTML autocontido, um JSON com os eventos, o vídeo anotado e a série de pose (`.parquet`). Sem `--start-time`, os eventos são datados a partir do momento da análise; para fundir com os vitais (PR 7), informe o início real da gravação. Se o OpenCV não tiver H.264 (caso do pip no Linux/Docker), o vídeo anotado é convertido com o `ffmpeg` para abrir no navegador.
+
+Detecção de quedas (UR Fall Dataset, conjunto de validação 11–20, sem ajuste de limiares):
+
+| Backend | Quedas detectadas | Alarmes falsos | Velocidade |
+|---|---|---|---|
+| YOLOv8-pose | 6/10 | 0/10 | 43–105 quadros/s |
+| OpenPose | 4/10 | 0/10 | 2–11 quadros/s |
+
 ## Alertas
 
 Todos os módulos publicam eventos clínicos em um barramento; o `AlertManager` os transforma em alertas para a equipe médica (detalhes em [docs/architecture.md](docs/architecture.md#contratos-de-dados-e-fluxo-de-alertas)).
@@ -123,6 +175,8 @@ O cenário cobre os comportamentos do gerenciador:
 - alerta repetido (mesmo paciente e tipo) dentro do cooldown é **suprimido**;
 - piora de severidade (HIGH → CRITICAL) **sempre passa**, mesmo dentro do cooldown;
 - evento abaixo de `MEDWATCH_ALERT_MIN_SEVERITY` é **ignorado**.
+
+Fora do cenário, vale também: se nenhum canal conseguir entregar o alerta, o cooldown não é registrado e a próxima repetição é enviada normalmente. O webhook não recebe o `evidence` dos eventos (só tipo, score e horário); o registro completo fica no `alerts.jsonl`.
 
 **Receber os alertas no celular/chat (opcional):** crie um webhook e configure no `.env`:
 
