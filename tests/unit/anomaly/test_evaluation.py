@@ -44,6 +44,7 @@ def test_evaluate_on_synthetic_stays_detects_most_injections():
     metrics = evaluate(analyzer, stays, per_stay=3, seed=0)
     combined = metrics["combined"]
     assert combined.injected == 18
+    assert combined.stays == 6
     assert combined.recall >= 0.8
     assert combined.precision >= 0.8
     assert set(metrics) == {"robust_zscore", "isolation_forest", "news2", "combined"}

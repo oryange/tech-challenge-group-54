@@ -80,3 +80,12 @@ def test_news2_severity_bands(total, single, expected):
 )
 def test_subscore_severity(points, expected):
     assert subscore_severity(points) == expected
+
+
+@pytest.mark.parametrize(
+    ("vital", "value", "points"),
+    [("temp", 38.04, 0), ("temp", 38.06, 1), ("hr", 90.4, 0), ("hr", 90.6, 1), ("rr", 20.4, 0)],
+)
+def test_values_are_rounded_to_table_resolution_before_scoring(vital, value, points):
+    base = {"rr": 16, "spo2": 97, "sbp": 120, "hr": 80, "temp": 37.0}
+    assert news2_of(**(base | {vital: value}))[f"news2_{vital}"] == points

@@ -76,11 +76,16 @@ def clean_values(events: pd.DataFrame, config: VitalsConfig) -> tuple[pd.DataFra
 
 
 def build_stay_grid(events: pd.DataFrame, config: VitalsConfig) -> pd.DataFrame:
-    """Grade regular (config.grid) com os vitais numéricos, `on_oxygen` e `alert`."""
+    """Grade regular (config.grid) com os vitais numéricos, `on_oxygen` e `alert`.
+
+    Cada bin é rotulado pelo fim do intervalo, (10:00, 11:00] → 11:00: uma medida das 10:55
+    vira um ponto das 11:00, nunca das 10:00. Assim nenhum evento é datado antes de o dado
+    existir, o que importa na fusão com os outros módulos (PR 7).
+    """
     numeric = events[events["vital"].isin(VITALS)]
     raw = (
         numeric.pivot_table(index="charttime", columns="vital", values="valuenum", aggfunc="mean")
-        .resample(config.grid)
+        .resample(config.grid, label="right", closed="right")
         .median()
         .reindex(columns=list(VITALS))
     )
@@ -97,10 +102,21 @@ def build_stay_grid(events: pd.DataFrame, config: VitalsConfig) -> pd.DataFrame:
     eye = events[events["vital"] == "gcs_eye"].set_index("charttime")["valuenum"]
 
     if not oxygen.empty:
-        raw["on_oxygen"] = oxygen.resample(config.grid).max().reindex(raw.index).astype(float)
+        raw["on_oxygen"] = (
+            oxygen.resample(config.grid, label="right", closed="right")
+            .max()
+            .reindex(raw.index)
+            .astype(float)
+        )
     else:
         raw["on_oxygen"] = float("nan")
-    raw["alert"] = (eye >= 4).resample(config.grid).min().reindex(raw.index).astype(float)
+    raw["alert"] = (
+        (eye >= 4)
+        .resample(config.grid, label="right", closed="right")
+        .min()
+        .reindex(raw.index)
+        .astype(float)
+    )
     if eye.empty:
         raw["alert"] = float("nan")
 

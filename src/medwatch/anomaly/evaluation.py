@@ -47,6 +47,7 @@ class MethodMetrics:
     injected: int = 0
     true_detections: int = 0
     new_detections: int = 0
+    stays: int = 0  # internações que de fato entraram na avaliação (≥ min_hours e com injeção)
     by_kind: dict[str, list[int]] = field(default_factory=dict)  # kind → [detectadas, total]
 
     @property
@@ -71,6 +72,7 @@ class MethodMetrics:
             "detected": self.detected,
             "new_detections": self.new_detections,
             "true_detections": self.true_detections,
+            "stays": self.stays,
             "recall_by_kind": {
                 kind: round(hit / total, 3) for kind, (hit, total) in sorted(self.by_kind.items())
             },
@@ -162,6 +164,7 @@ def evaluate(
             continue
         injected_events = analyzer.analyze(stay, raw=modified).events
         for name, metric in metrics.items():
+            metric.stays += 1
             _score_method(name, metric, labels, clean_events, injected_events)
     return metrics
 

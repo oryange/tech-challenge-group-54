@@ -105,20 +105,25 @@ class VitalsAnalyzer:
 
         Histerese: a faixa alertada só "rearma" (baixa) depois de o paciente ficar abaixo
         dela por `news2_rearm`, para oscilações entre faixas vizinhas não gerarem alertas.
+        Ao rearmar, a faixa alertada passa a ser a mais baixa vista nesse período, e não a do
+        momento: se o paciente caiu para LOW e já voltou a HIGH, essa piora gera evento.
         """
         events = []
         rearm = pd.Timedelta(self.config.news2_rearm)
         alerted = Severity.INFO
         below_since: pd.Timestamp | None = None
+        below_floor = Severity.CRITICAL
         # o pandas 3 guarda a coluna como string comum: reconverter garante a ordem clínica
         for ts, value in frame["news2_severity"].dropna().items():
             severity = Severity(value)
             if severity < alerted:
                 below_since = below_since if below_since is not None else ts
-                if ts - below_since >= rearm:
-                    alerted, below_since = severity, None
-                continue
-            below_since = None
+                below_floor = min(below_floor, severity)
+                if ts - below_since < rearm:
+                    continue
+                alerted, below_since, below_floor = below_floor, None, Severity.CRITICAL
+            else:
+                below_since, below_floor = None, Severity.CRITICAL
             if severity > alerted and severity >= Severity.LOW:
                 total = float(frame.at[ts, "news2_total"])
                 events.append(
@@ -191,6 +196,13 @@ class VitalsAnalyzer:
             self.iforest.flags(scores), scores, self.config.episode_max_gap
         ):
             score = float(scores[episode.peak])
+            news2_band = frame.at[episode.peak, "news2_severity"]
+            severity = self.iforest_severity(score)
+            if isinstance(news2_band, str):
+                # o IF mede quão rara é a combinação, não quão grave ela é: o NEWS2 no pico
+                # serve de piso, senão uma piora gradual com NEWS2 9–12 sairia LOW e seria
+                # descartada pelo min_severity, justo o caso que só o IF enxerga
+                severity = max(severity, Severity(news2_band))
             events.append(
                 ClinicalEvent(
                     patient_id=stay.patient_id,
@@ -198,11 +210,12 @@ class VitalsAnalyzer:
                     type="multivariate_anomaly",
                     timestamp=_utc(episode.peak),
                     score=score,
-                    severity=self.iforest_severity(score),
+                    severity=severity,
                     evidence={
                         "stay_id": stay.stay_id,
                         "detector": "isolation_forest",
                         "news2_total": _num(frame.at[episode.peak, "news2_total"]),
+                        "iforest_severity": self.iforest_severity(score).value,
                         "vitals": self._vitals_snapshot(frame, episode.peak),
                         **_episode_evidence(episode),
                     },

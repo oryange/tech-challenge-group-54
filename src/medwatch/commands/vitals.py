@@ -107,6 +107,8 @@ def analyze(
             f"Alertas enviados: {stats.sent} · suprimidos (cooldown): {stats.suppressed} · "
             f"ignorados (< {settings.alert_min_severity}): {stats.ignored}"
         )
+        if stats.failed:
+            typer.echo(f"Sem entrega em nenhum canal: {stats.failed}", err=True)
 
 
 @app.command()
@@ -126,6 +128,8 @@ def evaluate(
             f"{name:<18} {metric.precision:>9.3f} {metric.recall:>7.3f} {metric.f1:>6.3f}  "
             f"{metric.injected}"
         )
+    combined = metrics["combined"]
+    typer.echo(f"\nInternações avaliadas: {combined.stays} de {len(stays)} (≥ 24 h de dados)")
     typer.echo("\nRecall por tipo de anomalia (combinado):")
     for kind, (hit, total) in sorted(metrics["combined"].by_kind.items()):
         typer.echo(f"  {kind:<12} {hit / total:.3f}")
@@ -136,6 +140,7 @@ def evaluate(
         "per_stay": per_stay,
         "seed": seed,
         "stays": len(stays),
+        "stays_evaluated": combined.stays,
         "metrics": {name: metric.as_dict() for name, metric in metrics.items()},
     }
     path = reports / "vitals_evaluation.json"

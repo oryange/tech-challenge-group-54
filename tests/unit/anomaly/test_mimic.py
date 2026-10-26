@@ -30,18 +30,32 @@ def test_clean_values_converts_fahrenheit_and_drops_artifacts():
 
 
 def test_build_stay_grid_resamples_and_derives_oxygen_and_alertness():
+    minutes = pd.Timedelta("1min")
     raw = events(
-        (T0, "hr", 80.0, "80"),
-        (T0 + pd.Timedelta("20min"), "hr", 90.0, "90"),
-        (T0, "o2_device", None, "Nasal cannula"),
-        (T0 + pd.Timedelta("1h"), "hr", 100.0, "100"),
-        (T0 + pd.Timedelta("1h"), "o2_device", None, "Room air"),
-        (T0 + pd.Timedelta("1h"), "gcs_eye", 3.0, "To Speech"),
+        (T0 + 5 * minutes, "hr", 80.0, "80"),
+        (T0 + 20 * minutes, "hr", 90.0, "90"),
+        (T0 + 5 * minutes, "o2_device", None, "Nasal cannula"),
+        (T0 + 65 * minutes, "hr", 100.0, "100"),
+        (T0 + 65 * minutes, "o2_device", None, "Room air"),
+        (T0 + 65 * minutes, "gcs_eye", 3.0, "To Speech"),
     )
     grid = build_stay_grid(raw, CONFIG)
     assert grid["hr"].tolist() == [85.0, 100.0]  # mediana dentro da hora
     assert grid["on_oxygen"].tolist() == [1.0, 0.0]
     assert pd.isna(grid["alert"].iloc[0]) and grid["alert"].iloc[1] == 0.0
+
+
+def test_build_stay_grid_labels_bins_by_their_end():
+    """Uma medida das 10:55 vira um ponto das 11:00: o evento nunca é datado antes do dado."""
+    raw = events(
+        (T0 + pd.Timedelta("55min"), "hr", 80.0, "80"),
+        (T0 + pd.Timedelta("1h"), "hr", 90.0, "90"),  # o fim do bin entra no próprio bin
+        (T0 + pd.Timedelta("1h5min"), "hr", 100.0, "100"),
+    )
+    grid = build_stay_grid(raw, CONFIG)
+    assert grid.index.tolist() == [T0 + pd.Timedelta("1h"), T0 + pd.Timedelta("2h")]
+    assert grid["hr"].tolist() == [85.0, 100.0]
+    assert (grid.index >= raw["charttime"].min()).all()
 
 
 def test_iter_stays_reads_chartevents(tmp_path):
