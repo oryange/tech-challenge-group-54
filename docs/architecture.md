@@ -6,7 +6,7 @@
 |---|---|---|
 | Processamento de vídeo | Local/edge (OpenPose / YOLOv8) | Vídeo de paciente é dado sensível (LGPD); evita enviar imagem identificável à nuvem e reduz custo de banda. |
 | Processamento de áudio | Azure Speech to Text + Azure AI Language, mais features acústicas locais | Requisito obrigatório; região `brazilsouth`. Pitch, pausas e jitter são extraídos localmente para não depender só do texto. |
-| Estimativa de pose | Interface `PoseEstimator` com backends OpenPose (Docker/GPU) e YOLOv8-pose (padrão em dev) | OpenPose é difícil de instalar fora de Linux+CUDA. Ambos são normalizados para um esquema comum de keypoints. A demo e o relatório usam OpenPose. |
+| Estimativa de pose | Interface `PoseEstimator` com backends YOLOv8-pose (padrão) e OpenPose (rede original da CMU portada para PyTorch) | O OpenPose oficial exige compilação com CUDA e o OpenCV 5 removeu o importador Caffe. Ambos os backends são normalizados para COCO-17. Ver [ADR 0002](adr/0002-backends-de-pose.md). |
 | Fusão | Late fusion orientada a eventos | Cada módulo emite `ClinicalEvent`s padronizados; o `RiskEngine` agrega por paciente numa janela deslizante. Módulos são desenvolvidos e testados isoladamente. |
 | Tempo real | Simulador (replay acelerado de PhysioNet/MIMIC) → barramento assíncrono → FastAPI + WebSocket → Dashboard | Viável no escopo acadêmico; o barramento é uma interface e pode ganhar um adapter para Azure Event Hubs. |
 | Nomenclatura Azure | "Cognitive Services" = Azure AI Services; Text Analytics faz parte do Azure AI Language | Registrado para evitar ambiguidade. |
