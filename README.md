@@ -147,6 +147,8 @@ O cenário cobre os comportamentos do gerenciador:
 - piora de severidade (HIGH → CRITICAL) **sempre passa**, mesmo dentro do cooldown;
 - evento abaixo de `MEDWATCH_ALERT_MIN_SEVERITY` é **ignorado**.
 
+Fora do cenário, vale também: se nenhum canal conseguir entregar o alerta, o cooldown não é registrado e a próxima repetição é enviada normalmente. O webhook não recebe o `evidence` dos eventos (só tipo, score e horário); o registro completo fica no `alerts.jsonl`.
+
 **Receber os alertas no celular/chat (opcional):** crie um webhook e configure no `.env`:
 
 | Destino | Como criar | `MEDWATCH_ALERT_WEBHOOK_FORMAT` |
