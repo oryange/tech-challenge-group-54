@@ -4,12 +4,10 @@ Cada pipeline (vídeo, áudio, vitais, prescrições, movimentação) emite `Cli
 o AlertManager (e, a partir do PR 7, o RiskEngine) os transforma em `Alert`s.
 """
 
-from collections.abc import Mapping
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
-from types import MappingProxyType
-from typing import Any, cast
+from typing import Any, NoReturn, cast
 from uuid import UUID, uuid4
 
 from pydantic import (
@@ -18,7 +16,6 @@ from pydantic import (
     ConfigDict,
     Field,
     JsonValue,
-    field_serializer,
     field_validator,
 )
 
@@ -96,21 +93,37 @@ def _to_utc(value: datetime) -> datetime:
     return value.astimezone(UTC)
 
 
+def _read_only(self: object, *args: object, **kwargs: object) -> NoReturn:
+    raise TypeError("evidence é imutável: o mesmo evento é entregue a vários assinantes")
+
+
+class FrozenDict(dict[str, Any]):
+    """dict que recusa alterações. Continua sendo um dict: `json.dumps` e `==` funcionam."""
+
+    __setitem__ = __delitem__ = __ior__ = _read_only
+    clear = pop = popitem = setdefault = update = _read_only
+
+    def __reduce__(self) -> tuple[type, tuple[dict[str, Any]]]:
+        # copy/deepcopy/pickle reconstroem pelo construtor, sem passar pelo __setitem__
+        return type(self), (dict(self),)
+
+
+class FrozenList(list[Any]):
+    """list que recusa alterações. Continua sendo uma list: `json.dumps` e `==` funcionam."""
+
+    __setitem__ = __delitem__ = __iadd__ = __imul__ = _read_only
+    append = extend = insert = pop = remove = clear = sort = reverse = _read_only
+
+    def __reduce__(self) -> tuple[type, tuple[list[Any]]]:
+        return type(self), (list(self),)
+
+
 def _freeze(value: Any) -> Any:
-    """Congela recursivamente dicts e listas: o mesmo evento é entregue a vários assinantes."""
-    if isinstance(value, Mapping):
-        return MappingProxyType({key: _freeze(item) for key, item in value.items()})
+    """Congela recursivamente dicts e listas do `evidence`."""
+    if isinstance(value, dict):
+        return FrozenDict({key: _freeze(item) for key, item in value.items()})
     if isinstance(value, list | tuple):
-        return tuple(_freeze(item) for item in value)
-    return value
-
-
-def _thaw(value: Any) -> Any:
-    """Inverso do `_freeze`, para serializar em JSON."""
-    if isinstance(value, Mapping):
-        return {key: _thaw(item) for key, item in value.items()}
-    if isinstance(value, tuple):
-        return [_thaw(item) for item in value]
+        return FrozenList(_freeze(item) for item in value)
     return value
 
 
@@ -137,10 +150,6 @@ class ClinicalEvent(BaseModel):
         # o frozen do pydantic só bloqueia a atribuição; sem isto, um assinante que
         # alterasse `event.evidence` mudaria o evento para todos os outros
         return cast(dict[str, JsonValue], _freeze(value))
-
-    @field_serializer("evidence")
-    def _serialize_evidence(self, value: dict[str, JsonValue]) -> dict[str, JsonValue]:
-        return cast(dict[str, JsonValue], _thaw(value))
 
 
 class Alert(BaseModel):
