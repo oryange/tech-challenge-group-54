@@ -1,3 +1,5 @@
+import copy
+import json
 from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
@@ -120,12 +122,18 @@ def test_alert_is_immutable():
 
 def test_event_evidence_is_deeply_immutable():
     event = make_event()
-    with pytest.raises(TypeError):
-        event.evidence["spo2"] = 50  # type: ignore[index]
-    with pytest.raises(AttributeError):
+    with pytest.raises(TypeError, match="imutável"):
+        event.evidence["spo2"] = 50
+    with pytest.raises(TypeError, match="imutável"):
         event.evidence["nested"]["window"].append(4)  # type: ignore[index, union-attr]
-    # a serialização continua em JSON comum (dict e list)
-    assert event.model_dump(mode="json")["evidence"] == {
-        "spo2": 88,
-        "nested": {"window": [1, 2, 3]},
-    }
+    assert event.evidence == {"spo2": 88, "nested": {"window": [1, 2, 3]}}
+
+
+def test_frozen_evidence_still_behaves_like_json():
+    """Quem consome o evento pode serializar e comparar o evidence como dict/list comuns."""
+    event = make_event()
+    assert json.loads(json.dumps(event.evidence)) == {"spo2": 88, "nested": {"window": [1, 2, 3]}}
+    assert event.evidence["nested"]["window"] == [1, 2, 3]  # type: ignore[index]
+    copied = copy.deepcopy(event)
+    assert copied == event
+    assert event.model_copy(update={"score": 0.5}).evidence == event.evidence
