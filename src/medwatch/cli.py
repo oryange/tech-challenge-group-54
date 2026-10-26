@@ -1,5 +1,6 @@
 """CLI principal do MedWatch."""
 
+import asyncio
 import importlib.util
 import os
 import sys
@@ -13,6 +14,8 @@ from medwatch.config import Settings, get_settings
 from medwatch.log import setup_logging
 
 app = typer.Typer(help="MedWatch - monitoramento multimodal de pacientes", no_args_is_help=True)
+alerts_app = typer.Typer(help="Alertas para a equipe médica.", no_args_is_help=True)
+app.add_typer(alerts_app, name="alerts")
 
 OPTIONAL_LIBS = {
     "lib.ultralytics": "ultralytics",
@@ -120,3 +123,19 @@ def healthcheck(
     if not all(must_pass.values()):
         raise typer.Exit(code=1)
     logger.info("Healthcheck concluído (env={})", settings.env)
+
+
+@alerts_app.command("demo")
+def alerts_demo() -> None:
+    """Dispara um cenário fictício pelo fluxo completo de alertas."""
+    from medwatch.core.alerts.demo import run_demo
+
+    settings = get_settings()
+    stats = asyncio.run(run_demo(settings))
+    typer.echo(
+        f"\nAlertas enviados: {stats.sent} · suprimidos (cooldown): {stats.suppressed} · "
+        f"ignorados (< {settings.alert_min_severity}): {stats.ignored}"
+    )
+    if stats.failed:
+        typer.echo(f"Sem entrega em nenhum canal: {stats.failed}", err=True)
+    typer.echo(f"Histórico: {settings.alerts_file}")

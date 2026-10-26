@@ -12,7 +12,7 @@ Sistema que analisa e funde dados multimodais (vídeo, áudio e texto/sinais vit
 | Módulo | Status |
 |---|---|
 | Setup / infraestrutura (PR 1) | ✅ |
-| Core: eventos e alertas (PR 2) | ⏳ |
+| Core: eventos e alertas (PR 2) | ✅ |
 | Sinais vitais (PR 3) | ⏳ |
 | Áudio + Azure (PR 4) | ⏳ |
 | Vídeo: YOLOv8 + OpenPose (PR 5) | ⏳ |
@@ -123,6 +123,8 @@ O cenário cobre os comportamentos do gerenciador:
 - alerta repetido (mesmo paciente e tipo) dentro do cooldown é **suprimido**;
 - piora de severidade (HIGH → CRITICAL) **sempre passa**, mesmo dentro do cooldown;
 - evento abaixo de `MEDWATCH_ALERT_MIN_SEVERITY` é **ignorado**.
+
+Fora do cenário, vale também: se nenhum canal conseguir entregar o alerta, o cooldown não é registrado e a próxima repetição é enviada normalmente. O webhook não recebe o `evidence` dos eventos (só tipo, score e horário); o registro completo fica no `alerts.jsonl`.
 
 **Receber os alertas no celular/chat (opcional):** crie um webhook e configure no `.env`:
 

@@ -61,12 +61,27 @@
                      FastAPI (/ingest, /alerts, /ws/alerts)  ──►  Dashboard Streamlit (equipe médica)
 ```
 
-## Contratos de dados (implementados no PR 2)
+## Contratos de dados e fluxo de alertas
 
-- **ClinicalEvent**: `event_id` (uuid), `patient_id` (pseudonimizado), `source` (`video` | `audio` | `vitals` | `prescription` | `movement`), `type`, `timestamp` (UTC), `score` ∈ [0, 1], `severity` (`info` < `low` < `medium` < `high` < `critical`), `evidence` (dict serializável), `artifacts` (caminhos de relatórios/frames).
-- **Alert**: `alert_id`, `patient_id`, `severity`, `title`, `reasons` (eventos contribuintes), `recommended_action`, `created_at`, `acked`.
+Implementados em `src/medwatch/core/` (decisão registrada no [ADR 0001](adr/0001-late-fusion-event-driven.md)).
 
-Score agregado de risco por paciente na janela: `R = 1 − Π(1 − wₛ · scoreᵢ)`, com pesos `wₛ` por fonte em `configs/fusion.yaml`.
+- **`ClinicalEvent`** (`core/events.py`, imutável): `event_id` (uuid), `patient_id` (pseudonimizado), `source` (`video` | `audio` | `vitals` | `prescription` | `movement` | `fusion`), `type` (snake_case, ex.: `spo2_drop`), `timestamp` (sempre normalizado para UTC; horário sem fuso é rejeitado), `score` ∈ [0, 1], `severity`, `evidence` (somente valores JSON, congelado em profundidade, já que o mesmo evento vai para vários assinantes), `artifacts` (caminhos de relatórios/frames).
+- **`Severity`**: `info` < `low` < `medium` < `high` < `critical`. A comparação usa a ordem clínica, não a alfabética.
+- **`Alert`** (imutável): `alert_id`, `patient_id`, `alert_type`, `severity`, `title`, `reasons` (≥ 1 evento), `recommended_action` (derivada da severidade), `created_at`, `acked`. `Alert.from_event()` cria o alerta direto de um evento.
+- **`EventBus`** (`core/bus.py`): protocolo com `publish`, `subscribe` e `close`. `InMemoryEventBus` faz fan-out para filas por assinante (`async for event in subscription`). Uma fila limitada descarta o evento mais antigo em vez de travar os produtores.
+- **`AlertManager`** (`core/alerts/manager.py`): entrega cada alerta a todos os canais em paralelo. Uma falha em um canal é logada e não afeta os demais. Alertas com a mesma chave (paciente + `alert_type`) dentro do cooldown são suprimidos, **exceto se a severidade subir**. O cooldown só começa a contar quando pelo menos um canal entregou o alerta: se todos falharem, a próxima repetição é tentada de novo. No `consume`, as entregas correm em paralelo (até 32 por vez), para um CRITICAL não esperar os retries de alertas anteriores. Com `clock=None`, o cooldown usa o horário dos eventos (replay de dados históricos).
+- **Canais** (`core/alerts/channels.py`): `ConsoleChannel` (log com nível pela severidade), `JsonlChannel` (`outputs/alerts/alerts.jsonl`, um alerta por linha) e `WebhookChannel` (formatos `generic`, `teams` [Adaptive Card do Teams Workflows], `slack`, `discord`; repete com backoff exponencial em erro de rede, 429 e 5xx, respeitando o `Retry-After` até 30 s). Nenhum formato de webhook envia o `evidence` dos eventos; o registro completo fica no `alerts.jsonl`.
+
+```
+pipeline ──ClinicalEvent──► EventBus ──► AlertManager.consume()
+                                              │  filtra severity ≥ MEDWATCH_ALERT_MIN_SEVERITY
+                                              │  Alert.from_event()  (PR 7: RiskEngine)
+                                              │  dedup/cooldown/escalonamento
+                                              ▼
+                              console · alerts.jsonl · webhook
+```
+
+Score agregado de risco por paciente (RiskEngine, PR 7): `R = 1 − Π(1 − wₛ · scoreᵢ)`, com pesos `wₛ` por fonte em `configs/fusion.yaml`.
 
 ## Datasets
 

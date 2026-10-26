@@ -1,0 +1,21 @@
+"""Entrega de alertas à equipe médica."""
+
+from medwatch.core.alerts.channels import (
+    AlertChannel,
+    ChannelError,
+    ConsoleChannel,
+    JsonlChannel,
+    WebhookChannel,
+)
+from medwatch.core.alerts.manager import AlertManager, DispatchOutcome, DispatchStats
+
+__all__ = [
+    "AlertChannel",
+    "AlertManager",
+    "ChannelError",
+    "ConsoleChannel",
+    "DispatchOutcome",
+    "DispatchStats",
+    "JsonlChannel",
+    "WebhookChannel",
+]
