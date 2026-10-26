@@ -4,12 +4,23 @@ Cada pipeline (vídeo, áudio, vitais, prescrições, movimentação) emite `Cli
 o AlertManager (e, a partir do PR 7, o RiskEngine) os transforma em `Alert`s.
 """
 
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
+from types import MappingProxyType
+from typing import Any, cast
 from uuid import UUID, uuid4
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, JsonValue, field_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    JsonValue,
+    field_serializer,
+    field_validator,
+)
 
 
 class Source(StrEnum):
@@ -34,26 +45,38 @@ class Severity(StrEnum):
     def rank(self) -> int:
         return list(type(self)).index(self)
 
-    # str já define a comparação lexicográfica; sobrescrevemos para usar a ordem clínica
+    @classmethod
+    def _coerce(cls, other: object) -> "Severity | None":
+        """Aceita `Severity` ou o texto ("high"), como chega de YAML e de variáveis de ambiente."""
+        if isinstance(other, Severity):
+            return other
+        if isinstance(other, str):
+            # texto desconhecido levanta ValueError: devolver NotImplemented faria o Python
+            # cair na comparação alfabética do str, que é justamente o que queremos evitar
+            return cls(other.lower())
+        return None
+
+    # str já define a comparação lexicográfica; sobrescrevemos para usar a ordem clínica,
+    # inclusive contra texto: sem isso, `Severity.CRITICAL >= "high"` seria False
     def __lt__(self, other: object) -> bool:
-        if not isinstance(other, Severity):
+        if (rhs := self._coerce(other)) is None:
             return NotImplemented
-        return self.rank < other.rank
+        return self.rank < rhs.rank
 
     def __le__(self, other: object) -> bool:
-        if not isinstance(other, Severity):
+        if (rhs := self._coerce(other)) is None:
             return NotImplemented
-        return self.rank <= other.rank
+        return self.rank <= rhs.rank
 
     def __gt__(self, other: object) -> bool:
-        if not isinstance(other, Severity):
+        if (rhs := self._coerce(other)) is None:
             return NotImplemented
-        return self.rank > other.rank
+        return self.rank > rhs.rank
 
     def __ge__(self, other: object) -> bool:
-        if not isinstance(other, Severity):
+        if (rhs := self._coerce(other)) is None:
             return NotImplemented
-        return self.rank >= other.rank
+        return self.rank >= rhs.rank
 
 
 RECOMMENDED_ACTIONS: dict[Severity, str] = {
@@ -73,6 +96,24 @@ def _to_utc(value: datetime) -> datetime:
     return value.astimezone(UTC)
 
 
+def _freeze(value: Any) -> Any:
+    """Congela recursivamente dicts e listas: o mesmo evento é entregue a vários assinantes."""
+    if isinstance(value, Mapping):
+        return MappingProxyType({key: _freeze(item) for key, item in value.items()})
+    if isinstance(value, list | tuple):
+        return tuple(_freeze(item) for item in value)
+    return value
+
+
+def _thaw(value: Any) -> Any:
+    """Inverso do `_freeze`, para serializar em JSON."""
+    if isinstance(value, Mapping):
+        return {key: _thaw(item) for key, item in value.items()}
+    if isinstance(value, tuple):
+        return [_thaw(item) for item in value]
+    return value
+
+
 class ClinicalEvent(BaseModel):
     """Sinal detectado por um pipeline. `patient_id` deve ser pseudonimizado (nunca o nome)."""
 
@@ -86,20 +127,33 @@ class ClinicalEvent(BaseModel):
     score: float = Field(ge=0.0, le=1.0, description="Confiança/intensidade da anomalia")
     severity: Severity
     evidence: dict[str, JsonValue] = Field(default_factory=dict)
-    artifacts: list[Path] = Field(default_factory=list)
+    artifacts: tuple[Path, ...] = ()
 
     _normalize_timestamp = field_validator("timestamp")(_to_utc)
+
+    @field_validator("evidence")
+    @classmethod
+    def _freeze_evidence(cls, value: dict[str, JsonValue]) -> dict[str, JsonValue]:
+        # o frozen do pydantic só bloqueia a atribuição; sem isto, um assinante que
+        # alterasse `event.evidence` mudaria o evento para todos os outros
+        return cast(dict[str, JsonValue], _freeze(value))
+
+    @field_serializer("evidence")
+    def _serialize_evidence(self, value: dict[str, JsonValue]) -> dict[str, JsonValue]:
+        return cast(dict[str, JsonValue], _thaw(value))
 
 
 class Alert(BaseModel):
     """Alerta destinado à equipe médica, com os eventos que o motivaram."""
+
+    model_config = ConfigDict(frozen=True)
 
     alert_id: UUID = Field(default_factory=uuid4)
     patient_id: str = Field(min_length=1)
     alert_type: str = Field(min_length=1, description="Chave de deduplicação junto com o paciente")
     severity: Severity
     title: str = Field(min_length=1)
-    reasons: list[ClinicalEvent] = Field(min_length=1)
+    reasons: tuple[ClinicalEvent, ...] = Field(min_length=1)
     recommended_action: str
     created_at: AwareDatetime = Field(default_factory=_utcnow)
     acked: bool = False
@@ -118,6 +172,6 @@ class Alert(BaseModel):
             alert_type=f"{event.source}.{event.type}",
             severity=event.severity,
             title=title or f"{event.source.value}: {event.type.replace('_', ' ')}",
-            reasons=[event],
+            reasons=(event,),
             recommended_action=RECOMMENDED_ACTIONS[event.severity],
         )

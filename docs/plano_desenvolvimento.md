@@ -70,23 +70,23 @@ Comece o PR 4 cedo: provisionar o Azure (assinatura, F0, termos de IA Responsáv
 ## PR 2 — Core: eventos, barramento e alertas
 
 **Código**
-- [ ] `core/events.py`: `Source`, `Severity` (ordenável), `ClinicalEvent`, `Alert` (pydantic, uuid, timestamps UTC timezone-aware)
-- [ ] `score` validado em [0, 1]; `evidence` serializável; `artifacts: list[Path]`
-- [ ] `core/bus.py`: protocolo `EventBus` (`publish`, `subscribe`) e `InMemoryEventBus` (asyncio.Queue, fan-out)
-- [ ] `core/alerts/`: `AlertManager` com dedup (paciente+tipo), cooldown configurável e canais `ConsoleChannel`, `JsonlChannel` (`outputs/alerts/alerts.jsonl`), `WebhookChannel` (Teams/Slack, timeout e retry)
-- [ ] Falha num canal não derruba os outros
+- [x] `core/events.py`: `Source`, `Severity` (ordenável), `ClinicalEvent`, `Alert` (pydantic, uuid, timestamps UTC timezone-aware)
+- [x] `score` validado em [0, 1]; `evidence` serializável; `artifacts: list[Path]`
+- [x] `core/bus.py`: protocolo `EventBus` (`publish`, `subscribe`) e `InMemoryEventBus` (asyncio.Queue, fan-out)
+- [x] `core/alerts/`: `AlertManager` com dedup (paciente+tipo), cooldown configurável e canais `ConsoleChannel`, `JsonlChannel` (`outputs/alerts/alerts.jsonl`), `WebhookChannel` (Teams/Slack, timeout e retry)
+- [x] Falha num canal não derruba os outros
 
 **Dependências**
-- [ ] `httpx` no core; nenhuma dependência pesada
+- [x] `httpx` no core; nenhuma dependência pesada
 
 **Testes**
-- [ ] Round-trip de serialização de `ClinicalEvent` e `Alert`
-- [ ] Bus: dois subscribers recebem o mesmo evento
-- [ ] AlertManager: dedup no cooldown, reenvio depois, canal com exceção não bloqueia os demais
-- [ ] Webhook com `httpx.MockTransport` (sem rede)
+- [x] Round-trip de serialização de `ClinicalEvent` e `Alert`
+- [x] Bus: dois subscribers recebem o mesmo evento
+- [x] AlertManager: dedup no cooldown, reenvio depois, canal com exceção não bloqueia os demais
+- [x] Webhook com `httpx.MockTransport` (sem rede)
 
 **Docs**
-- [ ] `docs/architecture.md` atualizado; `docs/adr/0001-late-fusion-event-driven.md`
+- [x] `docs/architecture.md` atualizado; `docs/adr/0001-late-fusion-event-driven.md`
 
 **Validação**
 - [ ] `medwatch alerts demo` emite alerta fake no console, em `alerts.jsonl` (JSON válido por linha) e no webhook de teste (screenshot)
