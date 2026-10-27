@@ -43,6 +43,10 @@ acoustic:
 # consulta anterior do mesmo paciente sempre que possível: a comparação com o próprio
 # paciente é mais confiável que esta média. Fontes: limiares do Praat para jitter (1,04%)
 # e shimmer (3,81%) em voz patológica; taxas de fala do português brasileiro conversacional.
+# Limitação: jitter e shimmer vêm de vogal sustentada, e as features são medidas no áudio
+# inteiro (médico + paciente). Em fala conversacional com dois falantes, esses valores ficam
+# acima do baseline sem patologia: a consulta normal de exemplo dá disartria HIGH sem
+# --baseline (ver README, "Limitação conhecida").
 baseline:
   speech_rate_wpm: {mean: 150, std: 25}
   articulation_rate_wpm: {mean: 190, std: 30}
