@@ -180,23 +180,23 @@ Comece o PR 4 cedo: provisionar o Azure (assinatura, F0, termos de IA Responsáv
 ## PR 6 — Prescrições e movimentação
 
 **Código**
-- [ ] `anomaly/prescriptions.py`: timeline por paciente; regras (Δ dose > X% em 24 h, droga de alto risco, duplicidade, suspensão precoce) + Isolation Forest paciente-dia
-- [ ] Lista de alto risco em `configs/` (base ISMP)
-- [ ] `scripts/gen_synthetic_prescriptions.py` com anomalias rotuladas
-- [ ] `anomaly/movement.py`: atividade/min, imobilidade prolongada, saída do leito noturna, quedas
-- [ ] `evidence` explicável (regra, valores antes/depois)
+- [x] `anomaly/prescriptions.py`: timeline por paciente; regras (Δ dose ≥ 3× em 24 h, droga de alto risco, duplicidade, suspensão precoce) + Isolation Forest paciente-dia
+- [x] Lista de alto risco em `configs/prescriptions.yaml` (base ISMP)
+- [x] Anomalias rotuladas injetadas nas prescrições reais (`anomaly/prescription_evaluation.py`, no lugar de um gerador separado)
+- [x] `anomaly/movement.py`: atividade/min, imobilidade prolongada, saída do leito noturna, quedas (+ queda de atividade e adaptador da série de pose do vídeo)
+- [x] `evidence` explicável (regra, valores antes/depois)
 
 **Testes**
-- [ ] Cada regra com caso positivo e negativo
-- [ ] Conversão mg/g sem falso positivo
-- [ ] Série parada > N min dispara imobilidade
+- [x] Cada regra com caso positivo e negativo
+- [x] Conversão mg/g sem falso positivo
+- [x] Série parada > N min dispara imobilidade
 
 **Docs**
-- [ ] Seções "Prescrições" e "Movimentação"
+- [x] Seções "Prescrições" e "Movimentação" (README e `docs/relatorio_prescricoes_movimentacao.md`)
 
 **Validação**
-- [ ] P/R/F1 nas anomalias injetadas
-- [ ] Exemplos de alerta de prescrição e imobilidade em `alerts.jsonl`
+- [x] P/R/F1 nas anomalias injetadas
+- [x] Exemplos de alerta de prescrição e imobilidade em `alerts.jsonl`
 
 ## PR 7 — Fusão, tempo real, API e Dashboard
 

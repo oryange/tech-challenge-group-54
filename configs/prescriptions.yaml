@@ -1,0 +1,100 @@
+# Regras de anomalia na evolução de prescrições (MIMIC-IV demo, hosp/prescriptions).
+#
+# Referências:
+# - ISMP. High-Alert Medications in Acute Care Settings, 2024.
+#   https://www.ismp.org/recommendations/high-alert-medications-acute-list
+# - ISMP Brasil. Medicamentos potencialmente perigosos de uso hospitalar, 2019.
+#
+# Os nomes são comparados em minúsculas, por trecho: "heparin" casa com "Heparin Flush" e
+# "heparin sodium". Prescrições do tipo BASE (diluentes) e ADDITIVE ficam fora da análise.
+
+# Conversão para uma unidade comum antes de comparar doses: sem isso, 1 mg → 1000 mcg
+# pareceria um aumento de 1000×.
+unit_factors:
+  mass_mg: {mcg: 0.001, mg: 1, g: 1000, gm: 1000}
+  volume_ml: {ml: 1, l: 1000}
+
+# Medicamentos potencialmente perigosos (ISMP): um achado neles sobe um nível de severidade.
+high_alert:
+  - insulin
+  - heparin
+  - enoxaparin
+  - warfarin
+  - argatroban
+  - bivalirudin
+  - morphine
+  - hydromorphone
+  - fentanyl
+  - oxycodone
+  - methadone
+  - midazolam
+  - lorazepam
+  - propofol
+  - dexmedetomidine
+  - potassium chloride
+  - potassium phosphate
+  - magnesium sulfate
+  - digoxin
+  - amiodarone
+  - norepinephrine
+  - epinephrine
+  - phenylephrine
+  - vasopressin
+  - methotrexate
+
+# Doses ajustadas à beira do leito por protocolo (escala móvel, titulação de drogas vasoativas
+# e sedação): variações grandes são esperadas e ficam fora da regra de salto de dose.
+# Medido no MIMIC demo: insulina, fenilefrina e nitroglicerina respondem pela maioria das
+# variações ≥ 3× entre prescrições consecutivas.
+titratable:
+  - insulin
+  - phenylephrine
+  - norepinephrine
+  - epinephrine
+  - vasopressin
+  - nitroglycerin
+  - propofol
+  - dexmedetomidine
+  - midazolam
+  - fentanyl
+  - sodium chloride 0.9%  flush
+titratable_routes: [iv drip]
+
+rules:
+  # nova prescrição da mesma droga e via em até `window` com dose total por dia alterada
+  # Medido no MIMIC demo (fora os tituláveis): com 2× seriam 972 eventos em 2.121
+  # paciente-dias, porque dobrar a dose é ajuste de rotina (ex.: furosemida 20 → 40 mg).
+  # Com 3× são 161.
+  dose_change:
+    window: 24h
+    increase_ratio: 3.0     # dose ≥ 3× a anterior
+    decrease_ratio: 0.34    # dose ≤ ~1/3 da anterior
+    severity: medium
+  # duas drogas diferentes da mesma classe ativas ao mesmo tempo por pelo menos `min_overlap`
+  duplicate_therapy:
+    min_overlap: 24h
+    severity: low           # sobe para medium quando a classe é de alto risco (opioides)
+    classes:
+      opioides: [morphine, hydromorphone, oxycodone, methadone, tramadol]
+      anticoagulantes: [enoxaparin, warfarin, argatroban, bivalirudin, apixaban, rivaroxaban]
+      benzodiazepinicos: [lorazepam, diazepam, alprazolam, clonazepam]
+  # suspensa antes de `max_duration` e não represcrita em `no_restart_within`: pode indicar
+  # reação adversa ou erro de prescrição. Medido no MIMIC demo: 13,6% das prescrições duram
+  # menos de 6 h, por isso a regra exige a ausência de nova prescrição.
+  early_stop:
+    max_duration: 4h
+    no_restart_within: 24h
+    severity: low
+
+# Isolation Forest por paciente-dia: o volume de mudanças no tratamento é raro na população?
+isolation_forest:
+  contamination: 0.03
+  n_estimators: 200
+  random_state: 42
+  severity_medium: 0.58
+  severity_high: 0.65
+
+# Avaliação: anomalias injetadas nas prescrições reais (medwatch prescriptions evaluate)
+evaluation:
+  min_days: 3
+  per_stay: 2

@@ -14,9 +14,9 @@ Sistema que analisa e funde dados multimodais (vídeo, áudio e texto/sinais vit
 | Setup / infraestrutura (PR 1) | ✅ |
 | Core: eventos e alertas (PR 2) | ✅ |
 | Sinais vitais (PR 3) | ✅ |
-| Áudio + Azure (PR 4) | ⏳ |
+| Áudio + Azure (PR 4) | ✅ |
 | Vídeo: YOLOv8 + OpenPose (PR 5) | ✅ |
-| Prescrições e movimentação (PR 6) | ⏳ |
+| Prescrições e movimentação (PR 6) | ✅ |
 | Fusão, API e Dashboard (PR 7) | ⏳ |
 | Relatório técnico e demo (PR 8) | ⏳ |
 
@@ -159,6 +159,49 @@ Detecção de quedas (UR Fall Dataset, conjunto de validação 11–20, sem ajus
 |---|---|---|---|
 | YOLOv8-pose | 6/10 | 0/10 | 43–105 quadros/s |
 | OpenPose | 4/10 | 0/10 | 2–11 quadros/s |
+
+## Prescrições
+
+Anomalias na evolução das prescrições do **MIMIC-IV demo** (`hosp/prescriptions`: 14.391 prescrições em 250 internações). Método e resultados em [docs/relatorio_prescricoes_movimentacao.md](docs/relatorio_prescricoes_movimentacao.md).
+
+```bash
+medwatch prescriptions list                              # pacientes, internações e prescrições
+medwatch prescriptions analyze --patient 10004235        # eventos + outputs/reports/prescriptions_<id>.json/.png
+medwatch prescriptions analyze --patient 10004235 --alert
+medwatch prescriptions evaluate                          # precision/recall/F1 com anomalias injetadas
+```
+
+| Regra | O que detecta | Severidade |
+|---|---|---|
+| Salto de dose | nova prescrição da mesma droga e via em até 24 h com dose ≥ 3× ou ≤ ⅓ da anterior | medium |
+| Duplicidade terapêutica | duas drogas da mesma classe (opioides, anticoagulantes, benzodiazepínicos) ativas juntas por ≥ 24 h | low |
+| Suspensão precoce | suspensa em até 4 h e não represcrita nas 24 h seguintes | low |
+| Padrão do dia (Isolation Forest) | dia com volume atípico de prescrições novas, suspensas e alterações | low a high, pelo score |
+
+Medicamentos potencialmente perigosos (lista do ISMP) sobem um nível de severidade. As doses são convertidas para a mesma unidade antes da comparação (1000 mg = 1 g). Drogas tituladas por protocolo, como insulina em escala móvel e drogas vasoativas, ficam fora da regra de salto de dose. Os limiares ficam em [configs/prescriptions.yaml](configs/prescriptions.yaml).
+
+Resultado (anomalias injetadas em 178 internações reais com pelo menos 3 dias de prescrições, seed 42): regras com precision **0,874**, recall **0,883** e F1 **0,878**. Nos dados reais sem injeção, são 0,16 alerta ≥ medium por paciente-dia.
+
+## Movimentação
+
+Padrões de movimentação durante a internação a partir de uma série por minuto com `activity` (intensidade de movimento) e `in_bed` (no leito ou fora). A série pode vir de sensor de leito/acelerômetro ou da série de pose do vídeo.
+
+```bash
+medwatch movement analyze --patient SIM-001 --alert     # internação simulada com uma anomalia de cada tipo
+medwatch movement analyze --input serie.parquet --patient PAC-001
+medwatch movement from-pose outputs/reports/video/<vídeo>_pose.parquet \
+  --start-time 2026-10-19T14:30:00-03:00 --output movimento.parquet
+medwatch movement evaluate                               # precision/recall/F1 com anomalias injetadas
+```
+
+| Regra | O que detecta | Severidade |
+|---|---|---|
+| Imobilidade prolongada | no leito sem se mover por 120 min (reposicionamento) e por 240 min | medium → high |
+| Saída noturna do leito | fora do leito por ≥ 3 min entre 22h e 6h | medium |
+| Queda suspeita | pico de movimento seguido de pessoa parada fora do leito | critical |
+| Queda de atividade | atividade do dia abaixo da metade da mediana dos dias anteriores | low |
+
+Não existe dataset público de movimentação contínua em internação, então a avaliação usa internações sintéticas com confusores realistas (ida à poltrona, falhas do sensor) e anomalias injetadas (30 pacientes × 7 dias, seed 42): F1 combinado de **0,912**. A queda suspeita gera alarmes falsos em transferências bruscas para a poltrona (26 a 27 em 210 paciente-dias). O sensor sozinho não distingue a poltrona do chão, e por isso a confirmação pela queda detectada no vídeo fica para a fusão (PR 7).
 
 ## Alertas
 
