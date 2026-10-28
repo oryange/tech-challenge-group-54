@@ -67,10 +67,12 @@ ipykernel>=7.0.0,<8.0.0
 # --- Desenvolvimento: testes, lint e hooks ----------------------------------------------
 pytest>=8.0.0,<10.0.0
 pytest-cov>=5.0.0,<8.0.0
-ruff>=0.5.0,<1.0.0
+# ruff fixado no minor: na linha 0.x cada minor pode mudar o estilo do formatter, e o hook do
+# pre-commit usa este mesmo ruff (repo local), então dev e CI formatam igual.
+ruff>=0.16.0,<0.17.0
 mypy>=1.10.0,<3.0.0
-# O hook detect-private-key barra chaves Azure antes do commit, então o pre-commit faz
-# parte do setup, não é ferramenta opcional. Instalar o hook: `pre-commit install`.
+# O hook gitleaks barra chaves de API (inclusive as do Azure) antes do commit, então o
+# pre-commit faz parte do setup, não é ferramenta opcional. Instalar: `pre-commit install`.
 pre-commit>=4.0.0,<5.0.0
 
 # --- Pacote do projeto ------------------------------------------------------------------

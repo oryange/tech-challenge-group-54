@@ -1,10 +1,24 @@
 repos:
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
+  # ruff do próprio ambiente (versão do requirements.txt): o mesmo binário que o CI e o
+  # `make lint` usam. Um `rev` fixo aqui divergiria do formatter do CI a cada versão nova.
+  - repo: local
     hooks:
       - id: ruff
-        args: [--fix]
+        name: ruff
+        entry: ruff check --fix
+        language: system
+        types_or: [python, pyi]
       - id: ruff-format
+        name: ruff-format
+        entry: ruff format
+        language: system
+        types_or: [python, pyi]
+  # gitleaks: detecta chaves de API e tokens (inclui atribuições como AZURE_SPEECH_KEY=...).
+  # O detect-private-key abaixo só reconhece chaves privadas PEM/SSH.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
@@ -13,4 +27,6 @@ repos:
         args: [--maxkb=5000]
       - id: check-yaml
       - id: end-of-file-fixer
+        # respostas do Azure gravadas pelo --record: o gravador as reescreve como estão
+        exclude: ^data/samples/azure/
       - id: trailing-whitespace

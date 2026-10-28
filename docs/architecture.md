@@ -87,13 +87,15 @@ Score agregado de risco por paciente (RiskEngine, PR 7): `R = 1 − Π(1 − w�
 
 | Uso | Dataset | Observação |
 |---|---|---|
-| Sinais vitais (BP, HR, SpO2, RR) e prescrições | MIMIC-IV Clinical Database Demo (PhysioNet, acesso aberto, 100 pacientes) | Tabelas `chartevents`, `prescriptions`, `emar`. |
-| Vitais de alta frequência para streaming | BIDMC PPG and Respiration (PhysioNet) | HR, RR, SpO2 a 1 Hz. |
-| Sons respiratórios | AudioSet (Breathing, Cough, Wheeze, Gasp) | Complemento da análise acústica. |
-| Consultas em pt-BR | Gravações roteirizadas pelo grupo (normal × fatigado/dispneico) | Gera ground truth. |
-| Vídeo | Gravações do grupo (exercícios corretos/incorretos, simulação de queda) e vídeos com licença aberta | Pesos COCO do YOLOv8 não detectam instrumental cirúrgico; cirurgia é stretch goal com fine-tune. |
+| Sinais vitais (HR, PA, SpO2, FR, temperatura) e prescrições | MIMIC-IV Clinical Database Demo (PhysioNet, acesso aberto, 100 pacientes) | Tabelas `icu/chartevents`, `icu/d_items`, `icu/icustays` e `hosp/prescriptions`. Baixadas com `medwatch data download`, SHA-256 conferido. |
+| Consultas em pt-BR | Consultas fictícias sintetizadas com Azure TTS (`medwatch audio synth-samples`) e gravação com voz real pelo roteiro ([roteiro_gravacao_audio.md](roteiro_gravacao_audio.md)) | Roteiros normal × dispneia/fadiga dão o ground truth. |
+| Vídeo de fisioterapia | Vídeos de exercícios do Wikimedia Commons (CC BY / CC BY-SA) | Agachamento unipodal e agachamento com barra. |
+| Quedas | UR Fall Detection Dataset (uso em pesquisa) | 40 sequências; calibração 01–10, validação 11–20. |
+| Movimentação na internação | Internações sintéticas (30 pacientes × 7 dias, seed 42) | Não há dataset público de movimentação contínua em internação. |
 
-Avaliação: anomalias sintéticas rotuladas são injetadas em vitais e prescrições para medir precision/recall/F1.
+Ainda não utilizados: **BIDMC PPG and Respiration** (previsto para o simulador de tempo real do PR 7) e **AudioSet** (os clipes são do YouTube, sem fala em pt-BR nem rótulo clínico; os indicadores vocais usam features acústicas sobre a consulta). Os pesos COCO do YOLOv8 não detectam instrumental cirúrgico: cirurgia real exigiria fine-tuning (ex.: m2cai16-tool-locations).
+
+Avaliação: anomalias sintéticas rotuladas são injetadas em vitais, prescrições e movimentação para medir precision/recall/F1.
 
 ## Privacidade (LGPD)
 
