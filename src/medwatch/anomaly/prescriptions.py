@@ -26,31 +26,41 @@ DAY_FEATURES = ("active", "new", "stopped", "high_alert_active", "dose_changes")
 
 
 class DoseChangeRule(BaseModel):
+    """Salto de dose: nova prescrição da mesma droga e via com dose muito diferente."""
+
     window: str = "24h"
-    increase_ratio: float = Field(default=2.0, gt=1)
-    decrease_ratio: float = Field(default=0.5, gt=0, lt=1)
+    increase_ratio: float = Field(default=3.0, gt=1)
+    decrease_ratio: float = Field(default=0.34, gt=0, lt=1)
     severity: Severity = Severity.MEDIUM
 
 
 class DuplicateTherapyRule(BaseModel):
+    """Duas drogas diferentes da mesma classe ativas ao mesmo tempo."""
+
     min_overlap: str = "24h"
-    severity: Severity = Severity.MEDIUM
+    severity: Severity = Severity.LOW
     classes: dict[str, list[str]] = Field(default_factory=dict)
 
 
 class EarlyStopRule(BaseModel):
+    """Prescrição suspensa logo depois de começar e não represcrita."""
+
     max_duration: str = "4h"
     no_restart_within: str = "24h"
     severity: Severity = Severity.LOW
 
 
 class PrescriptionRules(BaseModel):
+    """Parâmetros das três regras explicáveis."""
+
     dose_change: DoseChangeRule = Field(default_factory=DoseChangeRule)
     duplicate_therapy: DuplicateTherapyRule = Field(default_factory=DuplicateTherapyRule)
     early_stop: EarlyStopRule = Field(default_factory=EarlyStopRule)
 
 
 class PrescriptionForestConfig(BaseModel):
+    """Isolation Forest por paciente-dia e cortes de severidade do score."""
+
     contamination: float = Field(default=0.03, gt=0, lt=0.5)
     n_estimators: int = 200
     random_state: int = 42
@@ -59,11 +69,15 @@ class PrescriptionForestConfig(BaseModel):
 
 
 class PrescriptionEvaluationConfig(BaseModel):
+    """Parâmetros da avaliação com anomalias injetadas."""
+
     min_days: int = 3
     per_stay: int = 2
 
 
 class PrescriptionsConfig(BaseModel):
+    """Configuração tipada de `configs/prescriptions.yaml`."""
+
     unit_factors: dict[str, dict[str, float]] = Field(default_factory=dict)
     high_alert: list[str] = Field(default_factory=list)
     titratable: list[str] = Field(default_factory=list)
@@ -74,10 +88,12 @@ class PrescriptionsConfig(BaseModel):
 
     @classmethod
     def load(cls, path: Path) -> "PrescriptionsConfig":
+        """Lê a configuração YAML."""
         with path.open(encoding="utf-8") as fh:
             return cls.model_validate(yaml.safe_load(fh))
 
     def drug_class(self, name: str) -> str | None:
+        """Classe terapêutica da droga (ex.: opioides) ou None se não pertencer a nenhuma."""
         for klass, members in self.rules.duplicate_therapy.classes.items():
             if _matches(name, members):
                 return klass
@@ -96,6 +112,8 @@ class PrescriptionStay:
 
 @dataclass
 class PrescriptionAnalysis:
+    """Resultado da análise de uma internação: features por dia e eventos."""
+
     stay: PrescriptionStay
     days: pd.DataFrame  # features e score do Isolation Forest por dia
     events: list[ClinicalEvent] = field(default_factory=list)
@@ -158,10 +176,12 @@ def normalize_orders(raw: pd.DataFrame, config: PrescriptionsConfig) -> pd.DataF
 
 
 def patient_id_for(subject_id: int) -> str:
+    """O MIMIC já é desidentificado; o prefixo deixa explícita a origem do identificador."""
     return f"MIMIC-{subject_id}"
 
 
 def load_prescriptions(dataset_dir: Path, subject_ids: list[int] | None = None) -> pd.DataFrame:
+    """Lê `hosp/prescriptions` do MIMIC, opcionalmente só de alguns pacientes."""
     raw = pd.read_csv(
         dataset_dir / PRESCRIPTIONS_FILE,
         usecols=[
@@ -184,6 +204,7 @@ def load_prescriptions(dataset_dir: Path, subject_ids: list[int] | None = None) 
 def iter_prescription_stays(
     dataset_dir: Path, config: PrescriptionsConfig, subject_ids: list[int] | None = None
 ) -> list[PrescriptionStay]:
+    """Prescrições normalizadas agrupadas por internação (subject_id, hadm_id)."""
     orders = normalize_orders(load_prescriptions(dataset_dir, subject_ids), config)
     stays = [
         PrescriptionStay(
@@ -215,6 +236,8 @@ def _iso(ts: object) -> str | None:
 
 
 class PrescriptionAnalyzer:
+    """Regras explicáveis + Isolation Forest por paciente-dia."""
+
     def __init__(self, config: PrescriptionsConfig) -> None:
         self.config = config
         cfg = config.isolation_forest
@@ -407,12 +430,14 @@ class PrescriptionAnalyzer:
         return pd.DataFrame(rows, index=days + pd.Timedelta("1D"))
 
     def fit(self, stays: list[PrescriptionStay]) -> "PrescriptionAnalyzer":
+        """Treina o Isolation Forest nos paciente-dias de todas as internações."""
         population = pd.concat([self.day_features(s.orders) for s in stays])
         self.iforest.fit(population[list(DAY_FEATURES)].astype(float))
         self._fitted = True
         return self
 
     def iforest_severity(self, score: float) -> Severity:
+        """Severidade do score do Isolation Forest pelos cortes da configuração."""
         cfg = self.config.isolation_forest
         if score >= cfg.severity_high:
             return Severity.HIGH

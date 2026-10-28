@@ -28,12 +28,14 @@ def _events_summary(events: list[ClinicalEvent]) -> dict[str, object]:
 
 
 def write_json(payload: dict[str, object], path: Path) -> Path:
+    """Grava o relatório em JSON (UTF-8, indentado)."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return path
 
 
 def prescriptions_payload(analyses: list[PrescriptionAnalysis]) -> dict[str, object]:
+    """Resumo por internação com os eventos de prescrição."""
     return {
         "stays": [
             {
@@ -49,6 +51,7 @@ def prescriptions_payload(analyses: list[PrescriptionAnalysis]) -> dict[str, obj
 
 
 def movement_payload(analysis: MovementAnalysis) -> dict[str, object]:
+    """Resumo da série de movimentação com os eventos."""
     series = analysis.series
     return {
         "patient_id": analysis.patient_id,

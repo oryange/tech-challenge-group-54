@@ -27,6 +27,8 @@ TOLERANCE = pd.Timedelta("10min")
 
 @dataclass(frozen=True)
 class InjectedMovement:
+    """Anomalia injetada e o intervalo em que ela ocorre."""
+
     kind: str
     start: pd.Timestamp
     end: pd.Timestamp
@@ -90,6 +92,7 @@ def _overlaps(event: ClinicalEvent, start: datetime, end: datetime) -> bool:
 def evaluate_movement(
     analyzer: MovementAnalyzer, patients: int, days: int, per_stay: int, seed: int = 42
 ) -> dict[str, MethodMetrics]:
+    """Simula internações, injeta anomalias e mede P/R/F1 por tipo e combinado."""
     rng = np.random.default_rng(seed)
     metrics = {kind: MethodMetrics() for kind in [*KINDS, "combined"]}
     for number in range(patients):

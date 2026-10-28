@@ -27,6 +27,8 @@ DUPLICATE_CLASS = "opioides"
 
 @dataclass(frozen=True)
 class InjectedPrescription:
+    """Anomalia injetada e o momento em que ela passa a ser detectável."""
+
     kind: str
     drug: str
     at: pd.Timestamp  # quando a anomalia passa a ser detectável
@@ -181,6 +183,7 @@ def evaluate_prescriptions(
     seed: int = 42,
     min_days: int = 3,
 ) -> dict[str, MethodMetrics]:
+    """Injeta anomalias nas internações com pelo menos `min_days` dias e mede P/R/F1."""
     rng = np.random.default_rng(seed)
     metrics = {name: MethodMetrics() for name in METHODS}
     for stay in stays:

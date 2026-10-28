@@ -19,6 +19,8 @@ from medwatch.core.events import ClinicalEvent, Severity, Source
 
 
 class ImmobilityRule(BaseModel):
+    """No leito sem se mover: MEDIUM em `minutes` e HIGH em `high_minutes`."""
+
     minutes: int = Field(default=120, gt=0)
     high_minutes: int = Field(default=240, gt=0)
     severity: Severity = Severity.MEDIUM
@@ -26,6 +28,8 @@ class ImmobilityRule(BaseModel):
 
 
 class NightExitRule(BaseModel):
+    """Fora do leito por pelo menos `min_minutes` dentro da janela noturna."""
+
     night_start: time = time(22, 0)
     night_end: time = time(6, 0)
     min_minutes: int = Field(default=3, gt=0)
@@ -33,6 +37,8 @@ class NightExitRule(BaseModel):
 
 
 class FallRule(BaseModel):
+    """Pico de movimento seguido de pessoa parada fora do leito."""
+
     spike: float = 0.8
     still_minutes: int = 2
     within_minutes: int = 2
@@ -40,12 +46,16 @@ class FallRule(BaseModel):
 
 
 class ActivityDropRule(BaseModel):
+    """Atividade do dia abaixo de `ratio` × a mediana dos dias anteriores."""
+
     min_history_days: int = 2
     ratio: float = Field(default=0.5, gt=0, lt=1)
     severity: Severity = Severity.LOW
 
 
 class MovementRules(BaseModel):
+    """Parâmetros das quatro regras de movimentação."""
+
     prolonged_immobility: ImmobilityRule = Field(default_factory=ImmobilityRule)
     night_bed_exit: NightExitRule = Field(default_factory=NightExitRule)
     fall: FallRule = Field(default_factory=FallRule)
@@ -53,24 +63,31 @@ class MovementRules(BaseModel):
 
 
 class MovementEvaluationConfig(BaseModel):
+    """Parâmetros da avaliação em internações sintéticas."""
+
     patients: int = 30
     days: int = 5
     per_stay: int = 4
 
 
 class MovementConfig(BaseModel):
+    """Configuração tipada de `configs/movement.yaml`."""
+
     moving_threshold: float = 0.05
     rules: MovementRules = Field(default_factory=MovementRules)
     evaluation: MovementEvaluationConfig = Field(default_factory=MovementEvaluationConfig)
 
     @classmethod
     def load(cls, path: Path) -> "MovementConfig":
+        """Lê a configuração YAML."""
         with path.open(encoding="utf-8") as fh:
             return cls.model_validate(yaml.safe_load(fh))
 
 
 @dataclass
 class MovementAnalysis:
+    """Resultado da análise: a série usada e os eventos."""
+
     patient_id: str
     series: pd.DataFrame
     events: list[ClinicalEvent] = field(default_factory=list)
@@ -99,6 +116,8 @@ def _in_night(ts: pd.DatetimeIndex, start: time, end: time) -> np.ndarray:
 
 
 class MovementAnalyzer:
+    """Regras de movimentação sobre a série por minuto (`activity`, `in_bed`)."""
+
     def __init__(self, config: MovementConfig) -> None:
         self.config = config
 
@@ -122,6 +141,7 @@ class MovementAnalyzer:
         )
 
     def immobility(self, patient_id: str, series: pd.DataFrame) -> list[ClinicalEvent]:
+        """Trechos no leito sem movimento; um evento por limiar cruzado."""
         rule = self.config.rules.prolonged_immobility
         still = (series["activity"] < self.config.moving_threshold) & (series["in_bed"] == 1)
         events = []
@@ -153,6 +173,7 @@ class MovementAnalyzer:
         return events
 
     def night_exits(self, patient_id: str, series: pd.DataFrame) -> list[ClinicalEvent]:
+        """Saídas do leito na janela noturna com duração mínima."""
         rule = self.config.rules.night_bed_exit
         night = _in_night(pd.DatetimeIndex(series.index), rule.night_start, rule.night_end)
         out = (series["in_bed"] == 0) & pd.Series(night, index=series.index)
@@ -179,6 +200,7 @@ class MovementAnalyzer:
         return events
 
     def falls(self, patient_id: str, series: pd.DataFrame) -> list[ClinicalEvent]:
+        """Pico de movimento seguido, em poucos minutos, de pessoa parada fora do leito."""
         rule = self.config.rules.fall
         activity, in_bed = series["activity"], series["in_bed"]
         still_out = (activity < self.config.moving_threshold) & (in_bed == 0)
@@ -215,6 +237,7 @@ class MovementAnalyzer:
         return events
 
     def activity_drops(self, patient_id: str, series: pd.DataFrame) -> list[ClinicalEvent]:
+        """Dias completos com atividade bem abaixo dos dias anteriores do paciente."""
         rule = self.config.rules.activity_drop
         daily = series["activity"].resample("1D").sum()
         complete = series["activity"].resample("1D").count() >= 23 * 60
@@ -247,6 +270,7 @@ class MovementAnalyzer:
         return events
 
     def analyze(self, patient_id: str, series: pd.DataFrame) -> MovementAnalysis:
+        """Aplica todas as regras e devolve os eventos em ordem de horário."""
         series = series.sort_index()
         events = [
             *self.immobility(patient_id, series),
