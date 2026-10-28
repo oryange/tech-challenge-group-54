@@ -1,0 +1,44 @@
+# Padrões de movimentação do paciente durante a internação.
+#
+# Entrada: uma série por minuto com `activity` (intensidade de movimento, 0 = parado,
+# ~1 = movimento brusco) e `in_bed` (1 no leito, 0 fora). Ela pode vir de sensor de leito ou
+# acelerômetro, ou da série de pose do vídeo (`medwatch movement from-pose`).
+#
+# Referências:
+# - NPIAP/EPUAP. Prevention and Treatment of Pressure Ulcers/Injuries, 2019:
+#   reposicionamento periódico de pacientes com mobilidade reduzida (referência usual: 2 h).
+# - Saída do leito à noite é um dos principais fatores de queda em internação
+#   (Oliver et al., 2010, Clinics in Geriatric Medicine).
+
+moving_threshold: 0.05     # activity acima disso conta como movimento
+
+rules:
+  # no leito, sem se mover por `minutes` seguidos
+  prolonged_immobility:
+    minutes: 120
+    high_minutes: 240
+    severity: medium
+    severity_high: high
+  # fora do leito por pelo menos `min_minutes` dentro da janela noturna
+  night_bed_exit:
+    night_start: "22:00"
+    night_end: "06:00"
+    min_minutes: 3
+    severity: medium
+  # pico de movimento seguido de pessoa fora do leito e parada (no chão)
+  fall:
+    spike: 0.8
+    still_minutes: 2
+    within_minutes: 2
+    severity: critical
+  # atividade do dia muito abaixo da mediana dos dias anteriores do próprio paciente
+  activity_drop:
+    min_history_days: 2
+    ratio: 0.5
+    severity: low
+
+# Avaliação com anomalias injetadas em internações sintéticas (medwatch movement evaluate)
+evaluation:
+  patients: 30
+  days: 7
+  per_stay: 4

@@ -12,6 +12,8 @@ from loguru import logger
 
 from medwatch.commands import audio as audio_commands
 from medwatch.commands import data as data_commands
+from medwatch.commands import movement as movement_commands
+from medwatch.commands import prescriptions as prescriptions_commands
 from medwatch.commands import video as video_commands
 from medwatch.commands import vitals as vitals_commands
 from medwatch.config import Settings, get_settings
@@ -24,6 +26,8 @@ app.add_typer(audio_commands.app, name="audio")
 app.add_typer(data_commands.app, name="data")
 app.add_typer(vitals_commands.app, name="vitals")
 app.add_typer(video_commands.app, name="video")
+app.add_typer(prescriptions_commands.app, name="prescriptions")
+app.add_typer(movement_commands.app, name="movement")
 
 OPTIONAL_LIBS = {
     "lib.ultralytics": "ultralytics",
