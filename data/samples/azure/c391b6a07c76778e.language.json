@@ -1,0 +1,401 @@
+{
+  "sentiment": {
+    "sentiment": "mixed",
+    "scores": {
+      "positive": 0.23058823529411765,
+      "neutral": 0.35235294117647054,
+      "negative": 0.4158823529411765
+    },
+    "sentences": [
+      {
+        "text": "Bom dia. ",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 1.0,
+          "neutral": 0.0,
+          "negative": 0.0
+        },
+        "opinions": []
+      },
+      {
+        "text": "Como a senhora passou a noite? ",
+        "sentiment": "neutral",
+        "scores": {
+          "positive": 0.01,
+          "neutral": 0.98,
+          "negative": 0.0
+        },
+        "opinions": []
+      },
+      {
+        "text": "Bom dia, doutor. ",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.95,
+          "neutral": 0.05,
+          "negative": 0.0
+        },
+        "opinions": []
+      },
+      {
+        "text": "Passei mal? ",
+        "sentiment": "negative",
+        "scores": {
+          "positive": 0.0,
+          "neutral": 0.01,
+          "negative": 0.99
+        },
+        "opinions": []
+      },
+      {
+        "text": "Acordei várias vezes com falta de ar. ",
+        "sentiment": "negative",
+        "scores": {
+          "positive": 0.0,
+          "neutral": 0.19,
+          "negative": 0.81
+        },
+        "opinions": []
+      },
+      {
+        "text": "Tive que dormir sentada. ",
+        "sentiment": "neutral",
+        "scores": {
+          "positive": 0.0,
+          "neutral": 0.99,
+          "negative": 0.01
+        },
+        "opinions": []
+      },
+      {
+        "text": "E durante o dia, como está? ",
+        "sentiment": "neutral",
+        "scores": {
+          "positive": 0.01,
+          "neutral": 0.99,
+          "negative": 0.0
+        },
+        "opinions": []
+      },
+      {
+        "text": "Estou muito cansada. ",
+        "sentiment": "negative",
+        "scores": {
+          "positive": 0.0,
+          "neutral": 0.01,
+          "negative": 0.99
+        },
+        "opinions": []
+      },
+      {
+        "text": "Me canso só de ir até o banheiro. ",
+        "sentiment": "negative",
+        "scores": {
+          "positive": 0.01,
+          "neutral": 0.1,
+          "negative": 0.89
+        },
+        "opinions": []
+      },
+      {
+        "text": "Fico sem ar no meio do caminho. ",
+        "sentiment": "neutral",
+        "scores": {
+          "positive": 0.01,
+          "neutral": 0.68,
+          "negative": 0.31
+        },
+        "opinions": []
+      },
+      {
+        "text": "Está sentindo dor no peito? ",
+        "sentiment": "negative",
+        "scores": {
+          "positive": 0.0,
+          "neutral": 0.02,
+          "negative": 0.98
+        },
+        "opinions": []
+      },
+      {
+        "text": "Não sinto dor no peito. ",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.89,
+          "neutral": 0.04,
+          "negative": 0.07
+        },
+        "opinions": []
+      },
+      {
+        "text": "É mais esse cansaço para respirar. ",
+        "sentiment": "negative",
+        "scores": {
+          "positive": 0.0,
+          "neutral": 0.02,
+          "negative": 0.97
+        },
+        "opinions": []
+      },
+      {
+        "text": "Vou ajustar o oxigênio e pedir uma gasometria. ",
+        "sentiment": "neutral",
+        "scores": {
+          "positive": 0.0,
+          "neutral": 1.0,
+          "negative": 0.0
+        },
+        "opinions": []
+      },
+      {
+        "text": "Qualquer piora, chame a enfermagem. ",
+        "sentiment": "negative",
+        "scores": {
+          "positive": 0.0,
+          "neutral": 0.01,
+          "negative": 0.99
+        },
+        "opinions": []
+      },
+      {
+        "text": "Está bem? ",
+        "sentiment": "neutral",
+        "scores": {
+          "positive": 0.04,
+          "neutral": 0.9,
+          "negative": 0.06
+        },
+        "opinions": []
+      },
+      {
+        "text": "Obrigada, doutor.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 1.0,
+          "neutral": 0.0,
+          "negative": 0.0
+        },
+        "opinions": []
+      }
+    ]
+  },
+  "key_phrases": [
+    "cansaço",
+    "oxigênio",
+    "Bom dia",
+    "senhora",
+    "noite",
+    "doutor",
+    "falta",
+    "ar",
+    "banheiro",
+    "meio",
+    "caminho",
+    "dor",
+    "peito",
+    "gasometria",
+    "piora"
+  ],
+  "summary": {
+    "mode": "extractive",
+    "sentences": [
+      "Acordei várias vezes com falta de ar.",
+      "Vou ajustar o oxigênio e pedir uma gasometria.",
+      "Qualquer piora, chame a enfermagem."
+    ]
+  },
+  "entities": [
+    {
+      "text": "doutor",
+      "category": "HealthcareProfession",
+      "subcategory": null,
+      "confidence": 0.79,
+      "offset": 49,
+      "length": 6,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "Passei mal",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.94,
+      "offset": 57,
+      "length": 10,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "falta de ar",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 1.0,
+      "offset": 94,
+      "length": 11,
+      "normalized_text": "Dyspnea",
+      "certainty": null
+    },
+    {
+      "text": "sentada",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.73,
+      "offset": 123,
+      "length": 7,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "dia",
+      "category": "Time",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 144,
+      "length": 3,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "muito",
+      "category": "ConditionQualifier",
+      "subcategory": null,
+      "confidence": 0.87,
+      "offset": 166,
+      "length": 5,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "cansada",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 1.0,
+      "offset": 172,
+      "length": 7,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "canso",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.75,
+      "offset": 184,
+      "length": 5,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "sem ar",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.87,
+      "offset": 220,
+      "length": 6,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "dor no",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.84,
+      "offset": 261,
+      "length": 6,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "peito",
+      "category": "BodyStructure",
+      "subcategory": null,
+      "confidence": 0.8,
+      "offset": 268,
+      "length": 5,
+      "normalized_text": "Chest",
+      "certainty": null
+    },
+    {
+      "text": "dor no peito",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.75,
+      "offset": 285,
+      "length": 12,
+      "normalized_text": "Chest Pain",
+      "certainty": "negative"
+    },
+    {
+      "text": "cansaço para respirar",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.98,
+      "offset": 311,
+      "length": 21,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "ajustar",
+      "category": "Course",
+      "subcategory": null,
+      "confidence": 0.79,
+      "offset": 338,
+      "length": 7,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "gasometria",
+      "category": "ExaminationName",
+      "subcategory": null,
+      "confidence": 0.99,
+      "offset": 369,
+      "length": 10,
+      "normalized_text": "Blood Gas Analysis",
+      "certainty": null
+    },
+    {
+      "text": "piora",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 390,
+      "length": 5,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "enfermagem",
+      "category": "HealthcareProfession",
+      "subcategory": null,
+      "confidence": 0.8,
+      "offset": 405,
+      "length": 10,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "Está bem",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.94,
+      "offset": 417,
+      "length": 8,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "doutor",
+      "category": "HealthcareProfession",
+      "subcategory": null,
+      "confidence": 0.65,
+      "offset": 437,
+      "length": 6,
+      "normalized_text": null,
+      "certainty": null
+    }
+  ],
+  "health_available": true,
+  "errors": []
+}

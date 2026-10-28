@@ -1,0 +1,537 @@
+{
+  "language": "pt-BR",
+  "segments": [
+    {
+      "text": "Bom dia.",
+      "start": 0.07,
+      "end": 0.9099999999999999,
+      "speaker": null,
+      "confidence": 0.8491832,
+      "words": [
+        {
+          "text": "bom",
+          "start": 0.07,
+          "end": 0.43
+        },
+        {
+          "text": "dia",
+          "start": 0.43,
+          "end": 0.91
+        }
+      ]
+    },
+    {
+      "text": "Como a senhora passou a noite?",
+      "start": 1.59,
+      "end": 3.55,
+      "speaker": null,
+      "confidence": 0.87639815,
+      "words": [
+        {
+          "text": "como",
+          "start": 1.59,
+          "end": 1.99
+        },
+        {
+          "text": "a",
+          "start": 1.99,
+          "end": 2.03
+        },
+        {
+          "text": "senhora",
+          "start": 2.03,
+          "end": 2.47
+        },
+        {
+          "text": "passou",
+          "start": 2.47,
+          "end": 2.91
+        },
+        {
+          "text": "a",
+          "start": 2.91,
+          "end": 3.03
+        },
+        {
+          "text": "noite",
+          "start": 3.03,
+          "end": 3.55
+        }
+      ]
+    },
+    {
+      "text": "Bom dia, doutor, passei bem, dormi a noite toda.",
+      "start": 4.86,
+      "end": 8.46,
+      "speaker": null,
+      "confidence": 0.84742546,
+      "words": [
+        {
+          "text": "bom",
+          "start": 4.86,
+          "end": 5.22
+        },
+        {
+          "text": "dia",
+          "start": 5.22,
+          "end": 5.54
+        },
+        {
+          "text": "doutor",
+          "start": 5.54,
+          "end": 6.14
+        },
+        {
+          "text": "passei",
+          "start": 6.46,
+          "end": 6.9
+        },
+        {
+          "text": "bem",
+          "start": 6.9,
+          "end": 7.18
+        },
+        {
+          "text": "dormi",
+          "start": 7.18,
+          "end": 7.54
+        },
+        {
+          "text": "a",
+          "start": 7.54,
+          "end": 7.58
+        },
+        {
+          "text": "noite",
+          "start": 7.58,
+          "end": 7.98
+        },
+        {
+          "text": "toda",
+          "start": 7.98,
+          "end": 8.46
+        }
+      ]
+    },
+    {
+      "text": "Sentiu alguma falta de ar ou cansaço para fazer as coisas?",
+      "start": 9.88,
+      "end": 13.360000000000001,
+      "speaker": null,
+      "confidence": 0.92025113,
+      "words": [
+        {
+          "text": "sentiu",
+          "start": 9.88,
+          "end": 10.36
+        },
+        {
+          "text": "alguma",
+          "start": 10.36,
+          "end": 10.76
+        },
+        {
+          "text": "falta",
+          "start": 10.76,
+          "end": 11.08
+        },
+        {
+          "text": "de",
+          "start": 11.08,
+          "end": 11.24
+        },
+        {
+          "text": "ar",
+          "start": 11.24,
+          "end": 11.4
+        },
+        {
+          "text": "ou",
+          "start": 11.4,
+          "end": 11.48
+        },
+        {
+          "text": "cansaço",
+          "start": 11.48,
+          "end": 12.12
+        },
+        {
+          "text": "para",
+          "start": 12.12,
+          "end": 12.32
+        },
+        {
+          "text": "fazer",
+          "start": 12.32,
+          "end": 12.64
+        },
+        {
+          "text": "as",
+          "start": 12.64,
+          "end": 12.76
+        },
+        {
+          "text": "coisas",
+          "start": 12.76,
+          "end": 13.36
+        }
+      ]
+    },
+    {
+      "text": "Não, não tenho falta de ar. Ontem caminhei 2 vezes pelo corredor e me senti disposta.",
+      "start": 14.71,
+      "end": 20.43,
+      "speaker": null,
+      "confidence": 0.8974024,
+      "words": [
+        {
+          "text": "não",
+          "start": 14.71,
+          "end": 15.15
+        },
+        {
+          "text": "não",
+          "start": 15.15,
+          "end": 15.39
+        },
+        {
+          "text": "tenho",
+          "start": 15.39,
+          "end": 15.67
+        },
+        {
+          "text": "falta",
+          "start": 15.67,
+          "end": 16.03
+        },
+        {
+          "text": "de",
+          "start": 16.03,
+          "end": 16.19
+        },
+        {
+          "text": "ar",
+          "start": 16.19,
+          "end": 16.51
+        },
+        {
+          "text": "ontem",
+          "start": 16.83,
+          "end": 17.27
+        },
+        {
+          "text": "caminhei",
+          "start": 17.27,
+          "end": 17.71
+        },
+        {
+          "text": "duas",
+          "start": 17.71,
+          "end": 18.03
+        },
+        {
+          "text": "vezes",
+          "start": 18.03,
+          "end": 18.43
+        },
+        {
+          "text": "pelo",
+          "start": 18.43,
+          "end": 18.63
+        },
+        {
+          "text": "corredor",
+          "start": 18.63,
+          "end": 19.15
+        },
+        {
+          "text": "e",
+          "start": 19.15,
+          "end": 19.23
+        },
+        {
+          "text": "me",
+          "start": 19.23,
+          "end": 19.35
+        },
+        {
+          "text": "senti",
+          "start": 19.35,
+          "end": 19.67
+        },
+        {
+          "text": "disposta",
+          "start": 19.67,
+          "end": 20.43
+        }
+      ]
+    },
+    {
+      "text": "E dor no peito ou tontura?",
+      "start": 21.75,
+      "end": 23.43,
+      "speaker": null,
+      "confidence": 0.9373087,
+      "words": [
+        {
+          "text": "e",
+          "start": 21.75,
+          "end": 21.99
+        },
+        {
+          "text": "dor",
+          "start": 21.99,
+          "end": 22.23
+        },
+        {
+          "text": "no",
+          "start": 22.23,
+          "end": 22.35
+        },
+        {
+          "text": "peito",
+          "start": 22.35,
+          "end": 22.67
+        },
+        {
+          "text": "ou",
+          "start": 22.67,
+          "end": 22.79
+        },
+        {
+          "text": "tontura",
+          "start": 22.79,
+          "end": 23.43
+        }
+      ]
+    },
+    {
+      "text": "Nenhuma dor no peito, também não tive tontura.",
+      "start": 24.67,
+      "end": 27.910000000000004,
+      "speaker": null,
+      "confidence": 0.92129326,
+      "words": [
+        {
+          "text": "nenhuma",
+          "start": 24.67,
+          "end": 25.23
+        },
+        {
+          "text": "dor",
+          "start": 25.23,
+          "end": 25.43
+        },
+        {
+          "text": "no",
+          "start": 25.43,
+          "end": 25.59
+        },
+        {
+          "text": "peito",
+          "start": 25.59,
+          "end": 26.11
+        },
+        {
+          "text": "também",
+          "start": 26.47,
+          "end": 26.91
+        },
+        {
+          "text": "não",
+          "start": 26.91,
+          "end": 27.07
+        },
+        {
+          "text": "tive",
+          "start": 27.07,
+          "end": 27.31
+        },
+        {
+          "text": "tontura",
+          "start": 27.31,
+          "end": 27.91
+        }
+      ]
+    },
+    {
+      "text": "Está se alimentando bem?",
+      "start": 29.23,
+      "end": 30.79,
+      "speaker": null,
+      "confidence": 0.8272769,
+      "words": [
+        {
+          "text": "está",
+          "start": 29.23,
+          "end": 29.63
+        },
+        {
+          "text": "se",
+          "start": 29.63,
+          "end": 29.79
+        },
+        {
+          "text": "alimentando",
+          "start": 29.79,
+          "end": 30.39
+        },
+        {
+          "text": "bem",
+          "start": 30.39,
+          "end": 30.79
+        }
+      ]
+    },
+    {
+      "text": "Estou sim, comi tudo no almoço e o apetite voltou.",
+      "start": 32.05,
+      "end": 35.57,
+      "speaker": null,
+      "confidence": 0.87898046,
+      "words": [
+        {
+          "text": "estou",
+          "start": 32.05,
+          "end": 32.53
+        },
+        {
+          "text": "sim",
+          "start": 32.53,
+          "end": 32.97
+        },
+        {
+          "text": "comi",
+          "start": 33.09,
+          "end": 33.49
+        },
+        {
+          "text": "tudo",
+          "start": 33.49,
+          "end": 33.81
+        },
+        {
+          "text": "no",
+          "start": 33.81,
+          "end": 33.89
+        },
+        {
+          "text": "almoço",
+          "start": 33.89,
+          "end": 34.41
+        },
+        {
+          "text": "e",
+          "start": 34.41,
+          "end": 34.49
+        },
+        {
+          "text": "o",
+          "start": 34.49,
+          "end": 34.57
+        },
+        {
+          "text": "apetite",
+          "start": 34.57,
+          "end": 35.05
+        },
+        {
+          "text": "voltou",
+          "start": 35.05,
+          "end": 35.57
+        }
+      ]
+    },
+    {
+      "text": "Ótimo.",
+      "start": 36.95,
+      "end": 37.63,
+      "speaker": null,
+      "confidence": 0.8113541,
+      "words": [
+        {
+          "text": "ótimo",
+          "start": 36.95,
+          "end": 37.63
+        }
+      ]
+    },
+    {
+      "text": "Vamos manter a medicação e reavaliar amanhã.",
+      "start": 38.35,
+      "end": 41.15,
+      "speaker": null,
+      "confidence": 0.83796716,
+      "words": [
+        {
+          "text": "vamos",
+          "start": 38.35,
+          "end": 38.83
+        },
+        {
+          "text": "manter",
+          "start": 38.83,
+          "end": 39.23
+        },
+        {
+          "text": "a",
+          "start": 39.23,
+          "end": 39.27
+        },
+        {
+          "text": "medicação",
+          "start": 39.27,
+          "end": 39.91
+        },
+        {
+          "text": "e",
+          "start": 39.91,
+          "end": 39.99
+        },
+        {
+          "text": "reavaliar",
+          "start": 39.99,
+          "end": 40.59
+        },
+        {
+          "text": "amanhã",
+          "start": 40.59,
+          "end": 41.15
+        }
+      ]
+    },
+    {
+      "text": "Combinado, doutor?",
+      "start": 42.35,
+      "end": 43.59,
+      "speaker": null,
+      "confidence": 0.9317754,
+      "words": [
+        {
+          "text": "combinado",
+          "start": 42.35,
+          "end": 43.11
+        },
+        {
+          "text": "doutor",
+          "start": 43.11,
+          "end": 43.59
+        }
+      ]
+    },
+    {
+      "text": "Obrigada.",
+      "start": 43.79,
+      "end": 44.67,
+      "speaker": null,
+      "confidence": 0.7991472,
+      "words": [
+        {
+          "text": "obrigada",
+          "start": 43.79,
+          "end": 44.67
+        }
+      ]
+    }
+  ]
+}

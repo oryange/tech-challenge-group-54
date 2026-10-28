@@ -1,0 +1,243 @@
+{
+  "sentiment": {
+    "sentiment": "positive",
+    "scores": {
+      "positive": 0.6,
+      "neutral": 0.35,
+      "negative": 0.05
+    },
+    "sentences": [
+      {
+        "text": "Bom dia. Como a senhora passou a noite?",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Bom dia, doutor.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Passei bem, dormi a noite toda.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Sentiu alguma falta de ar ou cansaço para fazer as coisas?",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Não, não tenho falta de ar.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Ontem caminhei duas vezes pelo corredor e me senti disposta.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "E dor no peito ou tontura?",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Nenhuma dor no peito.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Também não tive tontura.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Está se alimentando bem?",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Estou, sim. Comi tudo no almoço e o apetite voltou.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Ótimo. Vamos manter a medicação e reavaliar amanhã.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      },
+      {
+        "text": "Combinado, doutor. Obrigada.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.6,
+          "neutral": 0.35,
+          "negative": 0.05
+        },
+        "opinions": []
+      }
+    ]
+  },
+  "key_phrases": [
+    "noite toda",
+    "falta de ar",
+    "corredor",
+    "dor no peito",
+    "tontura",
+    "apetite",
+    "medicação"
+  ],
+  "summary": {
+    "mode": "extractive",
+    "sentences": [
+      "Passei bem, dormi a noite toda.",
+      "Ontem caminhei duas vezes pelo corredor e me senti disposta.",
+      "Vamos manter a medicação e reavaliar amanhã."
+    ]
+  },
+  "entities": [
+    {
+      "text": "falta de ar",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 103,
+      "length": 11,
+      "normalized_text": "Dyspnea",
+      "certainty": "neutralPossible"
+    },
+    {
+      "text": "cansaço",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 118,
+      "length": 7,
+      "normalized_text": "Fatigue",
+      "certainty": "neutralPossible"
+    },
+    {
+      "text": "falta de ar",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 163,
+      "length": 11,
+      "normalized_text": "Dyspnea",
+      "certainty": "negative"
+    },
+    {
+      "text": "dor no peito",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 239,
+      "length": 12,
+      "normalized_text": "Chest Pain",
+      "certainty": "neutralPossible"
+    },
+    {
+      "text": "tontura",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 255,
+      "length": 7,
+      "normalized_text": "Dizziness",
+      "certainty": "neutralPossible"
+    },
+    {
+      "text": "dor no peito",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 272,
+      "length": 12,
+      "normalized_text": "Chest Pain",
+      "certainty": "negative"
+    },
+    {
+      "text": "tontura",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 302,
+      "length": 7,
+      "normalized_text": "Dizziness",
+      "certainty": "negative"
+    },
+    {
+      "text": "medicação",
+      "category": "TreatmentName",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 410,
+      "length": 9,
+      "normalized_text": null,
+      "certainty": null
+    }
+  ],
+  "health_available": true,
+  "errors": []
+}

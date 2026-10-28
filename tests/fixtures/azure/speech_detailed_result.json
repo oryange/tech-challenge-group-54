@@ -1,0 +1,43 @@
+{
+  "Id": "5f0c",
+  "RecognitionStatus": "Success",
+  "Offset": 3000000,
+  "Duration": 21000000,
+  "DisplayText": "Estou com falta de ar.",
+  "NBest": [
+    {
+      "Confidence": 0.91,
+      "Lexical": "estou com falta de ar",
+      "ITN": "estou com falta de ar",
+      "MaskedITN": "estou com falta de ar",
+      "Display": "Estou com falta de ar.",
+      "Words": [
+        {
+          "Word": "estou",
+          "Offset": 3000000,
+          "Duration": 3500000
+        },
+        {
+          "Word": "com",
+          "Offset": 7000000,
+          "Duration": 3500000
+        },
+        {
+          "Word": "falta",
+          "Offset": 11000000,
+          "Duration": 3500000
+        },
+        {
+          "Word": "de",
+          "Offset": 15000000,
+          "Duration": 3500000
+        },
+        {
+          "Word": "ar",
+          "Offset": 19000000,
+          "Duration": 3500000
+        }
+      ]
+    }
+  ]
+}

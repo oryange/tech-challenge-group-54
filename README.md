@@ -193,6 +193,64 @@ MEDWATCH_ALERT_WEBHOOK_FORMAT=discord
 
 A URL do webhook dá acesso de escrita ao canal: mantenha-a só no `.env`.
 
+## Áudio
+
+Analisa a gravação de uma consulta e gera eventos `source=audio` para o `AlertManager`:
+
+```bash
+medwatch audio analyze consulta.wav --patient PAC-001 --start-time 2026-10-19T14:30:00-03:00
+medwatch audio analyze consulta.wav --patient PAC-001 --alert        # envia os eventos aos canais
+medwatch audio analyze consulta.wav --patient PAC-001 --diarize      # separa médico × paciente
+medwatch audio analyze nova.wav --patient PAC-001 \
+  --baseline outputs/reports/audio_PAC-001_<data>.json              # compara com a consulta anterior
+```
+
+| Etapa | Onde roda | O que faz |
+|---|---|---|
+| Pré-processamento | local | `.wav`, `.flac`, `.ogg` ou `.mp3` → PCM 16 kHz mono (taxa nativa do Azure Speech; 44,1 kHz só aumentaria o envio); valida tamanho e duração (3 s a 30 min) |
+| Azure Speech to Text | Azure | Reconhecimento contínuo em pt-BR, com tempo por palavra e diarização opcional |
+| Azure AI Language | Azure | Sentimento com opinion mining, frases-chave, resumo da consulta e Text Analytics for Health (sintomas, medicamentos e negação) |
+| Termos críticos | local | `configs/critical_terms.yaml`: dispneia, fadiga, dor torácica, sintomas neurológicos e sangramento |
+| Features acústicas | local | F0 (média e variação em semitons), jitter, shimmer, HNR, pausas, taxa de fala e de articulação |
+| Indicadores | local | Fadiga, disartria e dificuldade respiratória por z-score contra o baseline (`configs/audio.yaml`) |
+
+**Termos críticos.** Cada menção é classificada como afirmada, negada ou pergunta, e só as afirmadas geram evento:
+- "Estou com falta de ar" é **afirmada**;
+- "Não tenho falta de ar" e "Dor no peito, não" são **negadas**;
+- "Sentiu falta de ar?" é **pergunta**, porque sem diarização é a fala do médico.
+
+A negação vem do dicionário local e, quando disponível, da asserção do Text Analytics for Health.
+
+**Indicadores são triagem, não diagnóstico.** Cada feature vira um z-score orientado (positivo = na direção do achado), e o indicador é a média ponderada desses z com piso 0: uma feature melhor que o baseline não compensa o desvio de outra. Com z ≥ 1,5 o indicador é `low`, com z ≥ 2 é `medium` e com z ≥ 3 é `high`. Um termo crítico afirmado da mesma família (ex.: "falta de ar" no indicador respiratório) sobe a severidade em um nível. O baseline padrão é uma referência populacional aproximada. Com `--baseline`, a comparação é com uma consulta anterior do próprio paciente, que é bem mais confiável.
+
+**Limitação conhecida: indicadores acústicos com o baseline populacional.** Sem `--baseline`, a consulta fictícia **normal** (`consulta_01_normal.wav`) gera um falso positivo de **disartria HIGH** (z = +3,3). Há duas causas:
+- **O áudio tem dois falantes.** As features são medidas no áudio inteiro, com médico e paciente juntos. A troca de voz infla o jitter (2,4%), o shimmer (8,5%) e a variação de F0 (5,9 semitons, quase o dobro de uma pessoa só).
+- **O baseline de jitter e shimmer vem de vogal sustentada.** Os limiares do Praat (jitter 1,04%, shimmer 3,81%) são de exame de voz com "aaaa" contínuo. Em fala conversacional esses valores são naturalmente mais altos.
+
+Com a consulta normal como `--baseline` da consulta com dispneia, a disartria cai de z = +2,9 para +0,3 e não gera evento. Ficam só os eventos de termos (`dyspnea_terms` MEDIUM e `fatigue_terms` LOW). Por isso, a demonstração usa `--baseline`, e os indicadores acústicos sem baseline devem ser lidos com cautela.
+
+A voz sintética também não imita falta de ar: com `--baseline`, o indicador de dificuldade respiratória fica em z = 0 nas amostras do Azure TTS. Só a gravação com voz real ([docs/roteiro_gravacao_audio.md](docs/roteiro_gravacao_audio.md)) mostra esse indicador.
+
+Como evolução, as features poderiam ser medidas só nos trechos da paciente, com `--diarize`, e o baseline recalibrado para fala conversacional.
+
+**Resumo da consulta.** O padrão é o resumo **extrativo**: escolhe as frases mais representativas da própria consulta e mantém a ordem em que foram ditas. O resumo **abstrativo**, em que o modelo reescreve o texto, não está disponível em Brazil South. Para usá-lo, crie o recurso Language numa região suportada (ex.: East US, North Europe) e troque `summary_mode` em `configs/audio.yaml`. As frases-chave vêm do mesmo serviço.
+
+**Saída.** O relatório fica em `outputs/reports/audio_<paciente>_<data>.json`, com transcrição, resumo, frases-chave, sentimento, entidades, termos, features, indicadores e eventos. Ele contém a transcrição completa: é dado de saúde e não deve ser anexado a issues, PRs ou mensagens. Os eventos e alertas carregam só metadados (categoria, termos do dicionário, contagens, z-scores); resumo e frases-chave ficam fora deles. O que vai para o Azure e o que fica local está em [docs/adr/0003-lgpd-audio-azure.md](docs/adr/0003-lgpd-audio-azure.md).
+
+**Amostras e modo offline.**
+
+```bash
+medwatch audio synth-samples                    # gera data/samples/consulta_0*.wav com Azure TTS
+medwatch audio analyze data/samples/consulta_02_dispneia.wav --patient PAC-001 --record
+MEDWATCH_AZURE_MOCK=true medwatch audio analyze data/samples/consulta_02_dispneia.wav --patient PAC-001
+```
+
+- O `--record` grava as respostas do Azure em `data/samples/azure/<hash do áudio>.*.json`.
+- Com `MEDWATCH_AZURE_MOCK=true`, essas respostas são reaproveitadas sem chamar o Azure (é o modo do CI).
+- Grave assim **somente consultas fictícias**: esse diretório vai para o git.
+- Para gravar com voz real, siga [docs/roteiro_gravacao_audio.md](docs/roteiro_gravacao_audio.md).
+- Gravações em `.m4a` (iPhone) precisam ser convertidas antes: `ffmpeg -i consulta.m4a -ac 1 -ar 16000 consulta.wav`.
+
 ## Comandos de desenvolvimento
 
 ```bash

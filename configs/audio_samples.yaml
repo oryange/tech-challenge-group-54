@@ -1,0 +1,69 @@
+# Consultas fictícias sintetizadas com Azure Text to Speech (`medwatch audio synth-samples`).
+# Servem para testes reprodutíveis e para a demonstração. A voz sintética NÃO tem as
+# alterações reais de fadiga (jitter, shimmer, soprosidade); por isso a fala do paciente
+# dispneico é aproximada com ritmo lento, tom mais baixo e pausas longas entre frases curtas.
+# Para o vídeo, grave também as mesmas falas com voz real (docs/roteiro_gravacao_audio.md).
+
+voices:
+  medico: pt-BR-AntonioNeural
+  paciente: pt-BR-FranciscaNeural
+
+samples:
+  consulta_01_normal:
+    description: Paciente estável; nega falta de ar, cansaço, dor no peito e tontura.
+    patient_prosody: {rate: "0%", pitch: "0%"}
+    phrase_break_ms: 250
+    turn_break_ms: 600
+    turns:
+      - speaker: medico
+        phrases: ["Bom dia. Como a senhora passou a noite?"]
+      - speaker: paciente
+        phrases: ["Bom dia, doutor.", "Passei bem, dormi a noite toda."]
+      - speaker: medico
+        phrases: ["Sentiu alguma falta de ar ou cansaço para fazer as coisas?"]
+      - speaker: paciente
+        phrases:
+          - "Não, não tenho falta de ar."
+          - "Ontem caminhei duas vezes pelo corredor e me senti disposta."
+      - speaker: medico
+        phrases: ["E dor no peito ou tontura?"]
+      - speaker: paciente
+        phrases: ["Nenhuma dor no peito.", "Também não tive tontura."]
+      - speaker: medico
+        phrases: ["Está se alimentando bem?"]
+      - speaker: paciente
+        phrases: ["Estou, sim. Comi tudo no almoço e o apetite voltou."]
+      - speaker: medico
+        phrases: ["Ótimo. Vamos manter a medicação e reavaliar amanhã."]
+      - speaker: paciente
+        phrases: ["Combinado, doutor. Obrigada."]
+
+  consulta_02_dispneia:
+    description: Paciente com dispneia e fadiga; fala lenta, frases curtas e pausas longas.
+    patient_prosody: {rate: "-30%", pitch: "-10%"}
+    phrase_break_ms: 1100
+    turn_break_ms: 800
+    turns:
+      - speaker: medico
+        phrases: ["Bom dia. Como a senhora passou a noite?"]
+      - speaker: paciente
+        phrases:
+          - "Bom dia, doutor."
+          - "Passei mal."
+          - "Acordei várias vezes com falta de ar."
+          - "Tive que dormir sentada."
+      - speaker: medico
+        phrases: ["E durante o dia, como está?"]
+      - speaker: paciente
+        phrases:
+          - "Estou muito cansada."
+          - "Me canso só de ir até o banheiro."
+          - "Fico sem ar no meio do caminho."
+      - speaker: medico
+        phrases: ["Está sentindo dor no peito?"]
+      - speaker: paciente
+        phrases: ["Não sinto dor no peito.", "É mais esse cansaço para respirar."]
+      - speaker: medico
+        phrases: ["Vou ajustar o oxigênio e pedir uma gasometria. Qualquer piora, chame a enfermagem."]
+      - speaker: paciente
+        phrases: ["Está bem.", "Obrigada, doutor."]

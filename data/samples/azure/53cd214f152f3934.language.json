@@ -1,0 +1,381 @@
+{
+  "sentiment": {
+    "sentiment": "mixed",
+    "scores": {
+      "positive": 0.4064285714285714,
+      "neutral": 0.42928571428571427,
+      "negative": 0.16357142857142853
+    },
+    "sentences": [
+      {
+        "text": "Bom dia. ",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 1.0,
+          "neutral": 0.0,
+          "negative": 0.0
+        },
+        "opinions": []
+      },
+      {
+        "text": "Como a senhora passou a noite? ",
+        "sentiment": "neutral",
+        "scores": {
+          "positive": 0.01,
+          "neutral": 0.99,
+          "negative": 0.0
+        },
+        "opinions": []
+      },
+      {
+        "text": "Bom dia, doutor, passei bem, dormi a noite toda. ",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 1.0,
+          "neutral": 0.0,
+          "negative": 0.0
+        },
+        "opinions": []
+      },
+      {
+        "text": "Sentiu alguma falta de ar ou cansaço para fazer as coisas? ",
+        "sentiment": "negative",
+        "scores": {
+          "positive": 0.0,
+          "neutral": 0.01,
+          "negative": 0.99
+        },
+        "opinions": []
+      },
+      {
+        "text": "Não, não tenho falta de ar. ",
+        "sentiment": "neutral",
+        "scores": {
+          "positive": 0.0,
+          "neutral": 0.98,
+          "negative": 0.02
+        },
+        "opinions": []
+      },
+      {
+        "text": "Ontem caminhei 2 vezes pelo corredor e me senti disposta. ",
+        "sentiment": "neutral",
+        "scores": {
+          "positive": 0.05,
+          "neutral": 0.94,
+          "negative": 0.01
+        },
+        "opinions": []
+      },
+      {
+        "text": "E dor no peito ou tontura? ",
+        "sentiment": "negative",
+        "scores": {
+          "positive": 0.0,
+          "neutral": 0.0,
+          "negative": 1.0
+        },
+        "opinions": []
+      },
+      {
+        "text": "Nenhuma dor no peito, também não tive tontura. ",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.74,
+          "neutral": 0.01,
+          "negative": 0.25
+        },
+        "opinions": []
+      },
+      {
+        "text": "Está se alimentando bem? ",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 0.73,
+          "neutral": 0.26,
+          "negative": 0.0
+        },
+        "opinions": []
+      },
+      {
+        "text": "Estou sim, comi tudo no almoço e o apetite voltou. ",
+        "sentiment": "neutral",
+        "scores": {
+          "positive": 0.13,
+          "neutral": 0.86,
+          "negative": 0.01
+        },
+        "opinions": []
+      },
+      {
+        "text": "Ótimo. ",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 1.0,
+          "neutral": 0.0,
+          "negative": 0.0
+        },
+        "opinions": []
+      },
+      {
+        "text": "Vamos manter a medicação e reavaliar amanhã. ",
+        "sentiment": "neutral",
+        "scores": {
+          "positive": 0.01,
+          "neutral": 0.98,
+          "negative": 0.01
+        },
+        "opinions": []
+      },
+      {
+        "text": "Combinado, doutor? ",
+        "sentiment": "neutral",
+        "scores": {
+          "positive": 0.02,
+          "neutral": 0.98,
+          "negative": 0.0
+        },
+        "opinions": []
+      },
+      {
+        "text": "Obrigada.",
+        "sentiment": "positive",
+        "scores": {
+          "positive": 1.0,
+          "neutral": 0.0,
+          "negative": 0.0
+        },
+        "opinions": []
+      }
+    ]
+  },
+  "key_phrases": [
+    "Bom dia",
+    "cansaço",
+    "almoço",
+    "medicação",
+    "senhora",
+    "noite",
+    "doutor",
+    "falta",
+    "ar",
+    "coisas",
+    "corredor",
+    "peito",
+    "tontura",
+    "apetite",
+    "Combinado"
+  ],
+  "summary": {
+    "mode": "extractive",
+    "sentences": [
+      "Sentiu alguma falta de ar ou cansaço para fazer as coisas?",
+      "Estou sim, comi tudo no almoço e o apetite voltou.",
+      "Vamos manter a medicação e reavaliar amanhã."
+    ]
+  },
+  "entities": [
+    {
+      "text": "doutor",
+      "category": "HealthcareProfession",
+      "subcategory": null,
+      "confidence": 0.67,
+      "offset": 49,
+      "length": 6,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "passei bem",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.8,
+      "offset": 57,
+      "length": 10,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "dormi",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.9,
+      "offset": 69,
+      "length": 5,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "noite",
+      "category": "Time",
+      "subcategory": null,
+      "confidence": 0.8,
+      "offset": 77,
+      "length": 5,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "falta de ar",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 1.0,
+      "offset": 103,
+      "length": 11,
+      "normalized_text": "Dyspnea",
+      "certainty": "positivePossible"
+    },
+    {
+      "text": "cansaço para fazer as coisas",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.92,
+      "offset": 118,
+      "length": 28,
+      "normalized_text": null,
+      "certainty": "positivePossible"
+    },
+    {
+      "text": "falta de ar",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.99,
+      "offset": 163,
+      "length": 11,
+      "normalized_text": "Dyspnea",
+      "certainty": "negative"
+    },
+    {
+      "text": "Ontem",
+      "category": "Time",
+      "subcategory": null,
+      "confidence": 0.97,
+      "offset": 176,
+      "length": 5,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "dor no peito",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.95,
+      "offset": 236,
+      "length": 12,
+      "normalized_text": "Chest Pain",
+      "certainty": null
+    },
+    {
+      "text": "tontura",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 1.0,
+      "offset": 252,
+      "length": 7,
+      "normalized_text": "Dizziness",
+      "certainty": null
+    },
+    {
+      "text": "dor no peito",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.95,
+      "offset": 269,
+      "length": 12,
+      "normalized_text": "Chest Pain",
+      "certainty": "negative"
+    },
+    {
+      "text": "tontura",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.99,
+      "offset": 299,
+      "length": 7,
+      "normalized_text": "Dizziness",
+      "certainty": "negative"
+    },
+    {
+      "text": "se alimentando bem",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.96,
+      "offset": 313,
+      "length": 18,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "almoço",
+      "category": "Time",
+      "subcategory": null,
+      "confidence": 0.81,
+      "offset": 357,
+      "length": 6,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "apetite voltou",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.83,
+      "offset": 368,
+      "length": 14,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "Ótimo",
+      "category": "SymptomOrSign",
+      "subcategory": null,
+      "confidence": 0.68,
+      "offset": 384,
+      "length": 5,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "manter",
+      "category": "Course",
+      "subcategory": null,
+      "confidence": 0.74,
+      "offset": 397,
+      "length": 6,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "medicação",
+      "category": "TreatmentName",
+      "subcategory": null,
+      "confidence": 0.93,
+      "offset": 406,
+      "length": 9,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "reavaliar",
+      "category": "ExaminationName",
+      "subcategory": null,
+      "confidence": 0.58,
+      "offset": 418,
+      "length": 9,
+      "normalized_text": null,
+      "certainty": null
+    },
+    {
+      "text": "amanhã",
+      "category": "Time",
+      "subcategory": null,
+      "confidence": 0.96,
+      "offset": 428,
+      "length": 6,
+      "normalized_text": null,
+      "certainty": null
+    }
+  ],
+  "health_available": true,
+  "errors": []
+}
