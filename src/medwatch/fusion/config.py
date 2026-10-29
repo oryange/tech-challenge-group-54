@@ -33,6 +33,8 @@ class FusionRule(BaseModel):
     severity: Severity
     window_minutes: float = Field(gt=0)
     all_of: list[SourceCondition] = Field(min_length=2)
+    # as condições precisam ocorrer na ordem do `all_of` (ex.: prescrição antes da piora)
+    ordered: bool = False
 
     @property
     def window(self) -> timedelta:

@@ -19,10 +19,11 @@ services:
     <<: *medwatch
     profiles: [cli]
 
+  # sem autenticação: dentro do container escuta em 0.0.0.0, mas no host só em 127.0.0.1
   api:
     <<: *medwatch
     command: ["api", "--host", "0.0.0.0", "--port", "8000"]
-    ports: ["8000:8000"]
+    ports: ["127.0.0.1:8000:8000"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 5s
@@ -31,11 +32,11 @@ services:
 
   dashboard:
     <<: *medwatch
-    command: ["dashboard", "--port", "8501"]
+    command: ["dashboard", "--host", "0.0.0.0", "--port", "8501"]
     environment:
       <<: *env
       MEDWATCH_API_URL: http://api:8000
-    ports: ["8501:8501"]
+    ports: ["127.0.0.1:8501:8501"]
     depends_on:
       api: { condition: service_healthy }
 

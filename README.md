@@ -253,6 +253,8 @@ medwatch simulate --speed 0                 # sem esperar
 medwatch simulate --replay outputs/reports/vitals_10004235.json --replay-patient PAC-010 --only-replay
 ```
 
+Com vários `--replay`, os relatórios usam a mesma origem (o primeiro evento entre todos eles), então vitais e prescrições do mesmo paciente mantêm a distância real entre si.
+
 O cenário `demo` ([configs/scenarios/demo.yaml](configs/scenarios/demo.yaml)) tem 4 pacientes fictícios em 40 minutos de internação, e o comando confere o resultado contra a sequência documentada:
 
 | Min | Paciente | Alerta | Severidade | Por quê |
@@ -288,6 +290,8 @@ medwatch simulate --target api        # envia o cenário à API em tempo real
 | `GET /health` | Estado da API e do consumidor de eventos |
 
 ![Dashboard da equipe médica](docs/img/dashboard.png)
+
+**Limitação: API e dashboard não têm autenticação.** Qualquer um que alcance a porta pode enviar eventos (inclusive um CRITICAL falso) e reconhecer alertas. Por isso `medwatch api` e `medwatch dashboard` escutam só em `127.0.0.1`, e o `docker-compose.yml` publica as portas só no localhost do host. Não exponha as portas na rede sem antes colocar autenticação (ex.: um proxy com OAuth/mTLS na frente).
 
 O estado da API fica em memória: reiniciar zera pacientes e alertas. O histórico permanente fica em `outputs/alerts/alerts.jsonl`, e os ACKs em `outputs/alerts/acks.jsonl`. Os uploads aceitam só as extensões esperadas e têm limite de tamanho. O `patient_id` precisa ser um código (letras, números, `-` e `_`), porque vira nome de arquivo do relatório.
 

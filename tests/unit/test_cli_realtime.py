@@ -139,3 +139,15 @@ def test_dashboard_command_runs_streamlit(monkeypatch, api_url):
     assert command[1:4] == ["-m", "streamlit", "run"]
     assert command[4].endswith("dashboard/app.py")
     assert env["MEDWATCH_API_URL"] == (api_url or "http://localhost:8000")
+    # sem autenticação: por padrão o Streamlit não fica exposto na rede
+    assert command[command.index("--server.address") + 1] == "127.0.0.1"
+
+
+def test_dashboard_host_can_be_overridden_for_docker(monkeypatch):
+    calls = []
+    monkeypatch.setattr(
+        realtime.subprocess, "call", lambda command, env: calls.append(command) or 0
+    )
+    result = runner.invoke(app, ["dashboard", "--host", "0.0.0.0"])  # noqa: S104
+    assert result.exit_code == 0, result.output
+    assert calls[0][calls[0].index("--server.address") + 1] == "0.0.0.0"  # noqa: S104

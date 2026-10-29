@@ -100,6 +100,29 @@ def test_replay_rebases_report_events(tmp_path):
     assert [i.event.type for i in build_timeline(only_hr, start, tmp_path)] == ["hr_rise"]
 
 
+def test_replays_share_the_same_origin(tmp_path):
+    # vitais começam às 08:00 e a prescrição às 10:00: a distância real precisa ser mantida
+    vitals = tmp_path / "vitals.json"
+    vitals.write_text(
+        json.dumps({"events": [make_event(timestamp=T0).model_dump(mode="json")]}),
+        encoding="utf-8",
+    )
+    prescriptions = tmp_path / "prescriptions.json"
+    later = make_event(timestamp=T0 + timedelta(hours=2), type="dose_increase")
+    prescriptions.write_text(
+        json.dumps({"events": [later.model_dump(mode="json")]}), encoding="utf-8"
+    )
+    scenario = Scenario(
+        name="multi",
+        replay=[Replay(path=prescriptions, at_minutes=1), Replay(path=vitals, at_minutes=1)],
+    )
+    timeline = build_timeline(scenario, T0, tmp_path)
+    assert [(item.event.type, item.offset) for item in timeline] == [
+        ("spo2_drop", timedelta(minutes=1)),
+        ("dose_increase", timedelta(hours=2, minutes=1)),
+    ]
+
+
 def test_mismatches_report_missing_and_extra(fusion):
     scenario = Scenario.load(DEMO)
     timeline = build_timeline(scenario, T0, PROJECT_ROOT)

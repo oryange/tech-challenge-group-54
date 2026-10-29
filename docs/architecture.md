@@ -87,10 +87,10 @@ Configurada em `configs/fusion.yaml`. Cada evento que chega ao `RiskEngine` pode
 | `respiratory_deterioration` | áudio (falta de ar, indicador respiratório) + vitais (SpO2 ↓, FR ↑) | 30 min | critical |
 | `fall_confirmed` | vídeo (queda) + sensor de movimentação (queda suspeita) | 5 min | critical |
 | `post_fall_instability` | queda (vídeo ou sensor) + vitais (FC ↑, PAS ↓, NEWS2 ↑) | 30 min | critical |
-| `adverse_drug_event` | prescrição (aumento de dose, duplicidade) + piora dos vitais | 6 h | high |
+| `adverse_drug_event` | prescrição (aumento de dose, duplicidade) seguida de piora dos vitais (`ordered`) | 6 h | high |
 | `neuro_change` | áudio (sintoma neurológico, disartria) + queda ou saída noturna do leito | 60 min | high |
 
-Regras e alertas são avaliados no horário dos eventos, não no relógio: um replay de dados históricos gera os mesmos alertas que o tempo real, e eventos fora de ordem (o vídeo processado depois dos vitais) ainda completam uma regra. Só o retrato do risco "agora" (`GET /patients`) usa o relógio, para o risco de um paciente sem eventos novos decair.
+Regras e alertas são avaliados no horário dos eventos, não no relógio: um replay de dados históricos gera os mesmos alertas que o tempo real, e eventos fora de ordem (o vídeo processado depois dos vitais) ainda completam uma regra. Em regras com `ordered: true`, a ordem exigida entre as condições vale pelo horário dos eventos, não pela chegada: uma piora anterior à prescrição não é atribuída a ela. Só o retrato do risco "agora" (`GET /patients`) usa o relógio, para o risco de um paciente sem eventos novos decair.
 
 ## Fluxo de alerta
 
@@ -122,7 +122,7 @@ Latência medida do `publish` à entrega nos canais (cenário `demo`, 12 eventos
 
 ## Tempo real: simulador, API e dashboard
 
-- **Simulador** (`streaming/simulator.py`): reproduz um cenário (`configs/scenarios/*.yaml`) com a cadência real dividida por `--speed`. Aceita eventos roteirizados e relatórios JSON já gerados pelos módulos (`--replay`), com horários rebaseados para o início da simulação. Publica no barramento local ou no `POST /ingest/events` da API.
+- **Simulador** (`streaming/simulator.py`): reproduz um cenário (`configs/scenarios/*.yaml`) com a cadência real dividida por `--speed`. Aceita eventos roteirizados e relatórios JSON já gerados pelos módulos (`--replay`), com horários rebaseados para o início da simulação a partir de uma origem comum (o primeiro evento entre todos os relatórios), para as modalidades continuarem alinhadas. Publica no barramento local ou no `POST /ingest/events` da API.
 - **API** (`api/app.py`, FastAPI): `POST /ingest/events`, `POST /ingest/audio` e `POST /ingest/video` (upload que roda o pipeline do módulo numa thread e publica os eventos), `GET /patients`, `GET /patients/{id}/risk`, `GET /alerts`, `POST /alerts/{id}/ack`, `WS /ws/alerts` e `GET /health`. O estado é em memória: reiniciar a API zera pacientes e alertas, e o histórico permanente fica no `alerts.jsonl` e no `acks.jsonl`.
 - **Dashboard** (`dashboard/app.py`, Streamlit): pacientes ordenados por risco, feed de alertas com ACK, linha do tempo multimodal e contribuições de cada modalidade para o risco. Lê a API a cada 2 s.
 

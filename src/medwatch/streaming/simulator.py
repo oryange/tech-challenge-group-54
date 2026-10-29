@@ -4,6 +4,8 @@ Um cenário (`configs/scenarios/*.yaml`) é uma lista de eventos com o minuto em
 mais relatórios JSON já gerados pelos módulos (vitais, áudio, vídeo, prescrições,
 movimentação) para reproduzir. Os horários são rebaseados para o início da simulação e os
 eventos são publicados com a cadência real dividida por `speed` (60 = um minuto por segundo).
+Todos os relatórios usam a mesma origem (o primeiro evento entre eles), para as modalidades
+de um mesmo paciente manterem a distância real entre si.
 """
 
 import asyncio
@@ -37,7 +39,11 @@ class ScriptedEvent(BaseModel):
 
 
 class Replay(BaseModel):
-    """Relatório JSON de um módulo; o primeiro evento cai em `at_minutes`."""
+    """Relatório JSON de um módulo, deslocado `at_minutes` a partir da origem comum.
+
+    A origem é o primeiro evento entre todos os relatórios do cenário: vitais e prescrições
+    do mesmo paciente continuam alinhados no horário real.
+    """
 
     path: Path
     at_minutes: float = Field(default=0, ge=0)
@@ -111,16 +117,21 @@ def build_timeline(scenario: Scenario, start: datetime, base_dir: Path) -> list[
         )
         for item in scenario.events
     ]
+    loaded = []
     for replay in scenario.replay:
         path = replay.path if replay.path.is_absolute() else base_dir / replay.path
         events = [
             e for e in load_report_events(path) if replay.types is None or e.type in replay.types
         ]
-        if not events:
-            continue
-        first = events[0].timestamp
+        if events:
+            loaded.append((replay, events))
+    if not loaded:
+        return sorted(timeline, key=lambda item: item.offset)
+    # origem comum: rebasear cada relatório pelo próprio início desalinharia as modalidades
+    origin = min(events[0].timestamp for _, events in loaded)
+    for replay, events in loaded:
         for event in events:
-            offset = timedelta(minutes=replay.at_minutes) + (event.timestamp - first)
+            offset = timedelta(minutes=replay.at_minutes) + (event.timestamp - origin)
             # novo event_id: o mesmo relatório pode ser reproduzido mais de uma vez
             update: dict[str, Any] = {"timestamp": start + offset}
             if replay.patient_id:

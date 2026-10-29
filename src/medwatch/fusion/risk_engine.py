@@ -205,27 +205,46 @@ def match_rule(
     """Eventos que completam a regra junto com `trigger`, ou None.
 
     A regra só dispara no evento que a completa: um evento novo sem relação com a regra não
-    a repete. Para cada outra condição escolhe o evento mais forte dentro da janela.
+    a repete. Para cada outra condição escolhe o evento mais forte dentro da janela. Com
+    `rule.ordered`, cada condição só aceita eventos depois da anterior e antes da seguinte.
     """
-    if not any(condition.matches(trigger) for condition in rule.all_of):
-        return None
-    chosen: dict[str, ClinicalEvent] = {str(trigger.event_id): trigger}
-    trigger_used = False
-    for condition in rule.all_of:
-        if not trigger_used and condition.matches(trigger):
-            trigger_used = True
-            continue
+    slots = [i for i, condition in enumerate(rule.all_of) if condition.matches(trigger)]
+    if not rule.ordered:
+        slots = slots[:1]
+    for slot in slots:
+        events = _complete(rule, slot, trigger, history)
+        if events:
+            return events
+    return None
+
+
+def _complete(
+    rule: FusionRule, slot: int, trigger: ClinicalEvent, history: list[ClinicalEvent]
+) -> tuple[ClinicalEvent, ...] | None:
+    """Preenche as outras condições com o `trigger` ocupando a condição `slot`."""
+    chosen: dict[int, ClinicalEvent] = {slot: trigger}
+    used = {str(trigger.event_id)}
+    # na regra ordenada, parte do trigger para os dois lados: cada escolha limita a próxima
+    others = [*range(slot - 1, -1, -1), *range(slot + 1, len(rule.all_of))]
+    for index in others:
+        condition = rule.all_of[index]
         candidates = [
             e
             for e in history
             if condition.matches(e)
-            and str(e.event_id) not in chosen
+            and str(e.event_id) not in used
             and abs(e.timestamp - trigger.timestamp) <= rule.window
         ]
+        if rule.ordered:
+            if index < slot:
+                candidates = [e for e in candidates if e.timestamp <= chosen[index + 1].timestamp]
+            else:
+                candidates = [e for e in candidates if e.timestamp >= chosen[index - 1].timestamp]
         if not candidates:
             return None
         best = max(candidates, key=lambda e: (e.score, e.timestamp))
-        chosen[str(best.event_id)] = best
+        chosen[index] = best
+        used.add(str(best.event_id))
     events = sorted(chosen.values(), key=lambda e: e.timestamp)
     if events[-1].timestamp - events[0].timestamp > rule.window:
         return None

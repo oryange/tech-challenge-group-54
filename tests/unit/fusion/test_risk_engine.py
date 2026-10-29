@@ -78,6 +78,43 @@ def test_rule_works_with_events_out_of_order(config):
     assert "fusion.respiratory_deterioration" in [a.alert_type for a in alerts]
 
 
+def test_ordered_rule_fires_when_prescription_precedes_deterioration(config):
+    engine = RiskEngine(config)
+    engine.alerts_for(event(Source.PRESCRIPTION, "dose_increase", 0, 0.6, Severity.MEDIUM))
+    alerts = engine.alerts_for(event(Source.VITALS, "hr_drop", 120, 0.6, Severity.MEDIUM))
+    assert ("fusion.adverse_drug_event", Severity.HIGH) in types(alerts)
+
+
+def test_ordered_rule_ignores_deterioration_before_the_prescription(config):
+    # caso do replay do paciente 10004235: hr_drop às 08:23 e aumento de amiodarona às 10:23
+    engine = RiskEngine(config)
+    engine.alerts_for(event(Source.VITALS, "hr_drop", 0, 0.6, Severity.MEDIUM))
+    alerts = engine.alerts_for(
+        event(Source.PRESCRIPTION, "dose_increase", 120, 0.6, Severity.MEDIUM)
+    )
+    assert "fusion.adverse_drug_event" not in [a.alert_type for a in alerts]
+
+
+def test_ordered_rule_uses_event_time_not_arrival_order(config):
+    # a prescrição (min 0) chega depois dos vitais (min 30): a ordem vale pelo horário
+    engine = RiskEngine(config)
+    engine.alerts_for(event(Source.VITALS, "rr_drop", 30, 0.6, Severity.MEDIUM))
+    alerts = engine.alerts_for(event(Source.PRESCRIPTION, "dose_increase", 0, 0.6, Severity.MEDIUM))
+    assert "fusion.adverse_drug_event" in [a.alert_type for a in alerts]
+
+
+def test_ordered_rule_skips_earlier_deterioration_and_picks_a_later_one(config):
+    engine = RiskEngine(config)
+    engine.alerts_for(event(Source.VITALS, "spo2_drop", 0, 0.9, Severity.HIGH))
+    engine.alerts_for(event(Source.VITALS, "rr_drop", 90, 0.5, Severity.MEDIUM))
+    alerts = engine.alerts_for(
+        event(Source.PRESCRIPTION, "dose_increase", 60, 0.6, Severity.MEDIUM)
+    )
+    rule_alert = next(a for a in alerts if a.alert_type == "fusion.adverse_drug_event")
+    # a SpO2 do min 0 tem score maior, mas é anterior à prescrição
+    assert [e.type for e in rule_alert.reasons] == ["dose_increase", "rr_drop"]
+
+
 def test_two_weak_signals_from_different_modalities_raise_combined_risk(config):
     engine = RiskEngine(config)
     first = engine.alerts_for(event(Source.VITALS, "hr_rise", 0, 0.45, Severity.LOW))

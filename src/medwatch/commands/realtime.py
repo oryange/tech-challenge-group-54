@@ -179,6 +179,7 @@ def api(
 
 
 def dashboard(
+    host: Annotated[str, typer.Option(help="Interface de rede.")] = "127.0.0.1",
     port: Annotated[int, typer.Option(help="Porta do Streamlit.")] = 8501,
     api_url: Annotated[
         str | None, typer.Option(help="URL da API (padrão: MEDWATCH_API_URL ou localhost:8000).")
@@ -189,6 +190,6 @@ def dashboard(
     env = os.environ | {"MEDWATCH_API_URL": api_url or _api_url()}
     command = [
         sys.executable, "-m", "streamlit", "run", str(app_file),
-        "--server.port", str(port), "--server.headless", "true",
+        "--server.address", host, "--server.port", str(port), "--server.headless", "true",
     ]  # fmt: skip
     raise typer.Exit(subprocess.call(command, env=env))  # noqa: S603 - argumentos fixos
