@@ -1,7 +1,7 @@
 """Contratos de dados compartilhados por todos os módulos: eventos clínicos e alertas.
 
 Cada pipeline (vídeo, áudio, vitais, prescrições, movimentação) emite `ClinicalEvent`s;
-o AlertManager (e, a partir do PR 7, o RiskEngine) os transforma em `Alert`s.
+o RiskEngine (fusão) e o AlertManager os transformam em `Alert`s.
 """
 
 from datetime import UTC, datetime
@@ -175,7 +175,7 @@ class Alert(BaseModel):
 
     @classmethod
     def from_event(cls, event: ClinicalEvent, title: str | None = None) -> "Alert":
-        """Alerta direto de um único evento (até o RiskEngine do PR 7 fazer a fusão)."""
+        """Alerta direto de um único evento; os alertas de fusão vêm do RiskEngine."""
         return cls(
             patient_id=event.patient_id,
             alert_type=f"{event.source}.{event.type}",

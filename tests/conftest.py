@@ -13,6 +13,8 @@ def isolated_settings(monkeypatch, tmp_path):
         "MEDWATCH_ALERT_WEBHOOK_URL",
     ):
         monkeypatch.setenv(var, "")
+    # URL da API do dashboard/simulador: os testes usam o padrão (localhost:8000)
+    monkeypatch.delenv("MEDWATCH_API_URL", raising=False)
     monkeypatch.setenv("MEDWATCH_ALERT_MIN_SEVERITY", "medium")
     monkeypatch.setenv("MEDWATCH_ALERT_COOLDOWN_MINUTES", "15")
     monkeypatch.setenv("MEDWATCH_OUTPUTS_DIR", str(tmp_path / "outputs"))

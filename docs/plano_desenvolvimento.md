@@ -201,25 +201,26 @@ Comece o PR 4 cedo: provisionar o Azure (assinatura, F0, termos de IA Responsáv
 ## PR 7 — Fusão, tempo real, API e Dashboard
 
 **Código**
-- [ ] `fusion/risk_engine.py`: janela deslizante, noisy-OR ponderado, regras cross-modal em `configs/fusion.yaml`
-- [ ] `Alert.reasons` com eventos contribuintes
-- [ ] `streaming/simulator.py`: replay com `--speed` e cenários roteirizados
-- [ ] FastAPI: `POST /ingest/{audio,video}`, `GET /patients/{id}/risk`, `GET /alerts`, `POST /alerts/{id}/ack`, `WS /ws/alerts`, `GET /health`
-- [ ] Streamlit: pacientes por risco, timeline multimodal, feed em tempo real, ACK
-- [ ] `docker-compose` com serviços `api` e `dashboard`
+- [x] `fusion/risk_engine.py`: janela deslizante, noisy-OR ponderado, regras cross-modal em `configs/fusion.yaml`
+- [x] `Alert.reasons` com eventos contribuintes
+- [x] `streaming/simulator.py`: replay com `--speed` e cenários roteirizados
+- [x] FastAPI: `POST /ingest/{audio,video}`, `GET /patients/{id}/risk`, `GET /alerts`, `POST /alerts/{id}/ack`, `WS /ws/alerts`, `GET /health` (mais `POST /ingest/events` e `GET /patients`)
+- [x] Streamlit: pacientes por risco, timeline multimodal, feed em tempo real, ACK
+- [x] `docker-compose` com serviços `api` e `dashboard` (e `simulator` no profile `demo`)
 
 **Testes**
-- [ ] Evento isolado não escala; combinação cross-modal → CRITICAL
-- [ ] API com `TestClient` (inclui WebSocket)
-- [ ] Integração simulador → bus → risk → alert em < 2 s
+- [x] Evento isolado não escala; combinação cross-modal → CRITICAL
+- [x] API com `TestClient` (inclui WebSocket)
+- [x] Integração simulador → bus → risk → alert em < 2 s
 
 **Docs**
-- [ ] `make demo`; seção "Fluxo de alerta" com diagrama de sequência
+- [x] `make demo`; seção "Fluxo de alerta" com diagrama de sequência
 
 **Validação**
-- [ ] Cenário de demo produz a sequência de alertas documentada
-- [ ] Latência evento→alerta medida
-- [ ] Screenshots do dashboard
+- [x] Cenário de demo produz a sequência de alertas documentada
+- [x] Latência evento→alerta medida (mediana 3,5 ms, máx. 5,7 ms)
+- [x] Screenshots do dashboard
+- [ ] `make up` validado com Docker
 
 ## PR 8 — Relatório técnico, demo e hardening
 

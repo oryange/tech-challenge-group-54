@@ -14,6 +14,7 @@ from medwatch.core.events import ClinicalEvent
 from medwatch.datasets import VIDEO_SAMPLES_BY_NAME, urfall_split
 from medwatch.video.pipeline import VideoAnalyzer, build_events
 from medwatch.video.pose.base import PoseEstimator
+from medwatch.video.pose.factory import build_pose_estimator
 from medwatch.video.report import plot_timeline, write_html, write_json, write_pose_series
 from medwatch.video.rules import VideoConfig
 
@@ -25,16 +26,11 @@ def _config(settings: Settings) -> VideoConfig:
 
 
 def _pose(settings: Settings, backend: str) -> PoseEstimator:
-    if backend == "openpose":
-        from medwatch.video.pose.openpose import OpenPoseEstimator
-
-        return OpenPoseEstimator(models_dir=settings.models_dir)
-    if backend == "yolo":
-        from medwatch.video.pose.yolo_pose import YoloPoseEstimator
-
-        return YoloPoseEstimator(weights=settings.yolo_pose_weights, models_dir=settings.models_dir)
-    typer.echo(f"Backend desconhecido: {backend} (use yolo ou openpose)", err=True)
-    raise typer.Exit(code=1)
+    try:
+        return build_pose_estimator(backend, settings.models_dir, settings.yolo_pose_weights)
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from None
 
 
 def _resolve(settings: Settings, video: str) -> tuple[Path, str | None]:
