@@ -1,0 +1,82 @@
+# Fusão multimodal (RiskEngine): risco agregado por paciente numa janela deslizante.
+#
+# Risco R = 1 − Π(1 − w_fonte · score), com um termo por (fonte, tipo): o mesmo achado
+# repetido (ex.: três spo2_drop seguidos) conta uma vez, pelo maior score, para que a
+# repetição de um único sinal não pareça evidência independente.
+
+window_minutes: 30
+
+# Peso de cada fonte no noisy-OR: o quanto um achado daquela modalidade, sozinho, indica
+# risco real. Vitais e quedas no vídeo são medidas diretas; áudio e prescrições são indícios.
+source_weights:
+  vitals: 1.0
+  video: 0.9
+  movement: 0.8
+  audio: 0.7
+  prescription: 0.6
+
+# Faixas do risco agregado. O alerta de risco combinado (fusion.risk_score) só sai quando
+# há eventos de pelo menos `min_sources` modalidades e a faixa supera a severidade do pior
+# evento individual: um evento isolado nunca escala sozinho.
+risk_bands:
+  low: 0.30
+  medium: 0.55
+  high: 0.75
+  critical: 0.92
+min_sources: 2
+
+# Regras de escalonamento cross-modal: disparam quando cada condição tem um evento do
+# paciente dentro de `window_minutes` (contado a partir do evento mais antigo da combinação).
+# Com `ordered: true`, os eventos precisam ocorrer na ordem das condições em `all_of`.
+rules:
+  - name: respiratory_deterioration
+    title: "Piora respiratória: queixa na consulta + queda de oxigenação/aumento da FR"
+    severity: critical
+    window_minutes: 30
+    all_of:
+      - source: audio
+        types: [dyspnea_terms, respiratory_distress_indicator]
+      - source: vitals
+        types: [spo2_drop, rr_rise]
+
+  - name: fall_confirmed
+    title: "Queda confirmada por duas fontes (vídeo + sensor de movimentação)"
+    severity: critical
+    window_minutes: 5
+    all_of:
+      - source: video
+        types: [fall_detected]
+      - source: movement
+        types: [fall_suspected]
+
+  - name: post_fall_instability
+    title: "Instabilidade hemodinâmica após queda"
+    severity: critical
+    window_minutes: 30
+    all_of:
+      - source: [video, movement]
+        types: [fall_detected, fall_suspected]
+      - source: vitals
+        types: [hr_rise, sbp_drop, news2_rise]
+
+  - name: adverse_drug_event
+    title: "Possível efeito adverso: mudança de prescrição seguida de piora dos sinais vitais"
+    severity: high
+    window_minutes: 360
+    # a piora precisa vir depois da prescrição: antes dela, o remédio não explica a piora
+    ordered: true
+    all_of:
+      - source: prescription
+        types: [dose_increase, duplicate_therapy]
+      - source: vitals
+        types: [rr_drop, spo2_drop, sbp_drop, hr_drop, news2_rise]
+
+  - name: neuro_change
+    title: "Alteração neurológica: fala alterada + instabilidade motora"
+    severity: high
+    window_minutes: 60
+    all_of:
+      - source: audio
+        types: [neuro_terms, dysarthria_indicator]
+      - source: [video, movement]
+        types: [fall_detected, fall_suspected, night_bed_exit]

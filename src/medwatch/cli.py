@@ -14,6 +14,7 @@ from medwatch.commands import audio as audio_commands
 from medwatch.commands import data as data_commands
 from medwatch.commands import movement as movement_commands
 from medwatch.commands import prescriptions as prescriptions_commands
+from medwatch.commands import realtime as realtime_commands
 from medwatch.commands import video as video_commands
 from medwatch.commands import vitals as vitals_commands
 from medwatch.config import Settings, get_settings
@@ -28,6 +29,9 @@ app.add_typer(vitals_commands.app, name="vitals")
 app.add_typer(video_commands.app, name="video")
 app.add_typer(prescriptions_commands.app, name="prescriptions")
 app.add_typer(movement_commands.app, name="movement")
+app.command("simulate")(realtime_commands.simulate)
+app.command("api")(realtime_commands.api)
+app.command("dashboard")(realtime_commands.dashboard)
 
 OPTIONAL_LIBS = {
     "lib.ultralytics": "ultralytics",

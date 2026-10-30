@@ -72,16 +72,59 @@ Implementados em `src/medwatch/core/` (decisão registrada no [ADR 0001](adr/000
 - **`AlertManager`** (`core/alerts/manager.py`): entrega cada alerta a todos os canais em paralelo. Uma falha em um canal é logada e não afeta os demais. Alertas com a mesma chave (paciente + `alert_type`) dentro do cooldown são suprimidos, **exceto se a severidade subir**. O cooldown só começa a contar quando pelo menos um canal entregou o alerta: se todos falharem, a próxima repetição é tentada de novo. No `consume`, as entregas correm em paralelo (até 32 por vez), para um CRITICAL não esperar os retries de alertas anteriores. Com `clock=None`, o cooldown usa o horário dos eventos (replay de dados históricos).
 - **Canais** (`core/alerts/channels.py`): `ConsoleChannel` (log com nível pela severidade), `JsonlChannel` (`outputs/alerts/alerts.jsonl`, um alerta por linha) e `WebhookChannel` (formatos `generic`, `teams` [Adaptive Card do Teams Workflows], `slack`, `discord`; repete com backoff exponencial em erro de rede, 429 e 5xx, respeitando o `Retry-After` até 30 s). Nenhum formato de webhook envia o `evidence` dos eventos; o registro completo fica no `alerts.jsonl`.
 
-```
-pipeline ──ClinicalEvent──► EventBus ──► AlertManager.consume()
-                                              │  filtra severity ≥ MEDWATCH_ALERT_MIN_SEVERITY
-                                              │  Alert.from_event()  (PR 7: RiskEngine)
-                                              │  dedup/cooldown/escalonamento
-                                              ▼
-                              console · alerts.jsonl · webhook
+- **`RiskEngine`** (`fusion/risk_engine.py`, implementa o protocolo `AlertSource` do `AlertManager`): guarda o histórico recente de cada paciente e, para cada evento, devolve três tipos de alerta, descritos abaixo. O filtro de severidade e o cooldown continuam no `AlertManager`.
+
+## Fusão multimodal
+
+Configurada em `configs/fusion.yaml`. Cada evento que chega ao `RiskEngine` pode gerar:
+
+1. **Alerta direto** (`<fonte>.<tipo>`): o próprio evento, com a severidade dele. Um evento isolado nunca escala sozinho.
+2. **Regra cross-modal** (`fusion.<regra>`): combinações de modalidades dentro de uma janela, como falta de ar no áudio + queda de SpO2 nos vitais em até 30 min → CRITICAL. A regra só dispara no evento que a completa, e `reasons` traz os eventos da combinação.
+3. **Risco combinado** (`fusion.risk_score`): `R = 1 − Π(1 − wₛ · scoreᵢ)` na janela de 30 min, com pesos `wₛ` por fonte. Cada (fonte, tipo) entra uma vez, pelo maior score: três `spo2_drop` seguidos não são três evidências independentes. Só alerta com ≥ 2 modalidades e quando a faixa de R supera o pior evento individual. Se uma regra já disparou com severidade igual ou maior, ela é a explicação mais clara e o risco combinado não é enviado.
+
+| Regra | Combinação | Janela | Severidade |
+|---|---|---|---|
+| `respiratory_deterioration` | áudio (falta de ar, indicador respiratório) + vitais (SpO2 ↓, FR ↑) | 30 min | critical |
+| `fall_confirmed` | vídeo (queda) + sensor de movimentação (queda suspeita) | 5 min | critical |
+| `post_fall_instability` | queda (vídeo ou sensor) + vitais (FC ↑, PAS ↓, NEWS2 ↑) | 30 min | critical |
+| `adverse_drug_event` | prescrição (aumento de dose, duplicidade) seguida de piora dos vitais (`ordered`) | 6 h | high |
+| `neuro_change` | áudio (sintoma neurológico, disartria) + queda ou saída noturna do leito | 60 min | high |
+
+Regras e alertas são avaliados no horário dos eventos, não no relógio: um replay de dados históricos gera os mesmos alertas que o tempo real, e eventos fora de ordem (o vídeo processado depois dos vitais) ainda completam uma regra. Em regras com `ordered: true`, a ordem exigida entre as condições vale pelo horário dos eventos, não pela chegada: uma piora anterior à prescrição não é atribuída a ela. Só o retrato do risco "agora" (`GET /patients`) usa o relógio, para o risco de um paciente sem eventos novos decair.
+
+## Fluxo de alerta
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant P as Produtor (simulador, pipeline ou POST /ingest)
+    participant B as EventBus
+    participant R as RiskEngine
+    participant M as AlertManager
+    participant C as Canais (console, alerts.jsonl, webhook)
+    participant S as AlertStore
+    participant D as Dashboard / WS /ws/alerts
+    P->>B: publish(ClinicalEvent)
+    B->>R: alerts_for(evento)
+    R-->>M: direto + regras cross-modal + risco combinado
+    M->>M: severidade ≥ mínima? cooldown? (escalonamento sempre passa)
+    par entrega em paralelo
+        M->>C: send(alerta)
+    and
+        M->>S: send(alerta)
+        S-->>D: {"type": "alert", ...}
+    end
+    D->>S: POST /alerts/{id}/ack
+    S-->>D: {"type": "ack", ...} e registro em acks.jsonl
 ```
 
-Score agregado de risco por paciente (RiskEngine, PR 7): `R = 1 − Π(1 − wₛ · scoreᵢ)`, com pesos `wₛ` por fonte em `configs/fusion.yaml`.
+Latência medida do `publish` à entrega nos canais (cenário `demo`, 12 eventos, MacBook, canais console + JSONL): mediana de 3,5 ms e máximo de 5,7 ms. O teste de integração `test_simulator_to_alert_latency_under_two_seconds` garante < 2 s no CI.
+
+## Tempo real: simulador, API e dashboard
+
+- **Simulador** (`streaming/simulator.py`): reproduz um cenário (`configs/scenarios/*.yaml`) com a cadência real dividida por `--speed`. Aceita eventos roteirizados e relatórios JSON já gerados pelos módulos (`--replay`), com horários rebaseados para o início da simulação a partir de uma origem comum (o primeiro evento entre todos os relatórios), para as modalidades continuarem alinhadas. Publica no barramento local ou no `POST /ingest/events` da API.
+- **API** (`api/app.py`, FastAPI): `POST /ingest/events`, `POST /ingest/audio` e `POST /ingest/video` (upload que roda o pipeline do módulo numa thread e publica os eventos), `GET /patients`, `GET /patients/{id}/risk`, `GET /alerts`, `POST /alerts/{id}/ack`, `WS /ws/alerts` e `GET /health`. O estado é em memória: reiniciar a API zera pacientes e alertas, e o histórico permanente fica no `alerts.jsonl` e no `acks.jsonl`.
+- **Dashboard** (`dashboard/app.py`, Streamlit): pacientes ordenados por risco, feed de alertas com ACK, linha do tempo multimodal e contribuições de cada modalidade para o risco. Lê a API a cada 2 s.
 
 ## Datasets
 

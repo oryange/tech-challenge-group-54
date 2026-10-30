@@ -1,0 +1,133 @@
+# Cenário da demonstração: quatro pacientes fictícios em ~40 minutos de internação.
+# Com --speed 60 (padrão) cada minuto vira um segundo. Os eventos imitam o que cada módulo
+# emite (tipos, scores e evidence), para rodar num clone limpo sem datasets nem Azure.
+# Para reproduzir saídas reais dos módulos, use `replay` (ou `medwatch simulate --replay`).
+name: demo
+description: >
+  PAC-001 piora da respiração (áudio + vitais), PAC-002 cai da cama (vídeo + sensor + vitais),
+  PAC-003 tem depressão respiratória após aumento de opioide (prescrição + vitais) e
+  PAC-004 tem só eventos isolados, que não escalam.
+
+events:
+  # --- PAC-001: sinais fracos que somados viram risco; depois a regra respiratória -------
+  - at_minutes: 0
+    patient_id: PAC-001
+    source: vitals
+    type: hr_rise
+    score: 0.45
+    severity: low
+    evidence: {detector: robust_zscore, value: 104, baseline_median: 86, z: 3.2}
+    note: FC acima do histórico do próprio paciente (LOW, abaixo do limiar de alerta)
+  - at_minutes: 3
+    patient_id: PAC-001
+    source: audio
+    type: fatigue_terms
+    score: 0.40
+    severity: low
+    evidence: {category: fatigue, terms: [cansaço], mentions: 1}
+    note: Na consulta, a paciente relata cansaço (LOW); FC + fala somam risco MEDIUM
+  - at_minutes: 6
+    patient_id: PAC-001
+    source: audio
+    type: dyspnea_terms
+    score: 0.64
+    severity: medium
+    evidence: {category: dyspnea, terms: [falta de ar], mentions: 2}
+    note: Relata falta de ar (MEDIUM); o risco combinado sobe para HIGH
+  - at_minutes: 10
+    patient_id: PAC-001
+    source: vitals
+    type: spo2_drop
+    score: 0.82
+    severity: high
+    evidence: {detector: robust_zscore, value: 88, baseline_median: 96, z: -5.1}
+    note: SpO2 cai para 88% (HIGH); com a falta de ar → regra respiratória CRITICAL
+  - at_minutes: 12
+    patient_id: PAC-001
+    source: vitals
+    type: spo2_drop
+    score: 0.85
+    severity: high
+    evidence: {detector: robust_zscore, value: 87, baseline_median: 96, z: -5.4}
+    note: Nova queda de SpO2 dentro do cooldown → suprimida (a equipe já foi avisada)
+
+  # --- PAC-003: aumento de opioide e, 25 min depois, FR baixa -----------------------------
+  - at_minutes: 15
+    patient_id: PAC-003
+    source: prescription
+    type: dose_increase
+    score: 0.60
+    severity: medium
+    evidence: {drug: morphine, route: IV, ratio: 3.0, high_alert: true}
+    note: Morfina IV triplicada em menos de 24 h (MEDIUM)
+
+  # --- PAC-002: queda vista pelo sensor e pelo vídeo; depois instabilidade ------------------
+  - at_minutes: 20
+    patient_id: PAC-002
+    source: movement
+    type: fall_suspected
+    score: 0.90
+    severity: critical
+    evidence: {rule: fall, peak_activity: 0.97, still_minutes: 3, in_bed: 0}
+    note: Sensor - pico de movimento e paciente parado fora do leito (CRITICAL)
+  - at_minutes: 21
+    patient_id: PAC-002
+    source: video
+    type: fall_detected
+    score: 0.96
+    severity: critical
+    evidence:
+      hip_drop_fraction_1s: 0.79
+      posture_aspect_ratio: 2.13
+      message: "Queda detectada: descida rápida seguida de postura horizontal"
+    note: Vídeo do quarto confirma a queda → regra fall_confirmed
+  - at_minutes: 25
+    patient_id: PAC-004
+    source: movement
+    type: night_bed_exit
+    score: 0.55
+    severity: medium
+    evidence: {rule: night_bed_exit, minutes_out: 6}
+    note: PAC-004 sai do leito à noite (MEDIUM, evento isolado)
+  - at_minutes: 30
+    patient_id: PAC-002
+    source: vitals
+    type: hr_rise
+    score: 0.70
+    severity: medium
+    evidence: {detector: robust_zscore, value: 128, baseline_median: 82, z: 4.4}
+    note: Taquicardia após a queda → instabilidade pós-queda CRITICAL
+  - at_minutes: 35
+    patient_id: PAC-004
+    source: movement
+    type: low_activity
+    score: 0.30
+    severity: low
+    evidence: {rule: low_activity, ratio_to_median: 0.42}
+    note: Atividade baixa (LOW); mesma modalidade do evento anterior, não soma risco
+  - at_minutes: 40
+    patient_id: PAC-003
+    source: vitals
+    type: rr_drop
+    score: 0.66
+    severity: medium
+    evidence: {detector: robust_zscore, value: 8, baseline_median: 16, z: -4.0}
+    note: FR cai para 8 irpm (MEDIUM) → regra de efeito adverso HIGH
+
+# Com MEDWATCH_ALERT_MIN_SEVERITY=medium e cooldown de 15 min:
+# 14 alertas enviados, 2 suprimidos (minuto 12) e 2 eventos ignorados (minutos 0 e 35).
+expected_alerts:
+  - {at_minutes: 3, patient_id: PAC-001, alert_type: fusion.risk_score, severity: medium}
+  - {at_minutes: 6, patient_id: PAC-001, alert_type: audio.dyspnea_terms, severity: medium}
+  - {at_minutes: 6, patient_id: PAC-001, alert_type: fusion.risk_score, severity: high}
+  - {at_minutes: 10, patient_id: PAC-001, alert_type: vitals.spo2_drop, severity: high}
+  - {at_minutes: 10, patient_id: PAC-001, alert_type: fusion.respiratory_deterioration, severity: critical}
+  - {at_minutes: 15, patient_id: PAC-003, alert_type: prescription.dose_increase, severity: medium}
+  - {at_minutes: 20, patient_id: PAC-002, alert_type: movement.fall_suspected, severity: critical}
+  - {at_minutes: 21, patient_id: PAC-002, alert_type: video.fall_detected, severity: critical}
+  - {at_minutes: 21, patient_id: PAC-002, alert_type: fusion.fall_confirmed, severity: critical}
+  - {at_minutes: 25, patient_id: PAC-004, alert_type: movement.night_bed_exit, severity: medium}
+  - {at_minutes: 30, patient_id: PAC-002, alert_type: vitals.hr_rise, severity: medium}
+  - {at_minutes: 30, patient_id: PAC-002, alert_type: fusion.post_fall_instability, severity: critical}
+  - {at_minutes: 40, patient_id: PAC-003, alert_type: vitals.rr_drop, severity: medium}
+  - {at_minutes: 40, patient_id: PAC-003, alert_type: fusion.adverse_drug_event, severity: high}

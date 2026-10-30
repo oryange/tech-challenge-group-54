@@ -1,14 +1,49 @@
+x-medwatch: &medwatch
+  build: { context: ., dockerfile: docker/Dockerfile }
+  image: medwatch:local
+  env_file:
+    - path: .env
+      required: false
+  environment: &env
+    MEDWATCH_DATA_DIR: /app/data
+    MEDWATCH_MODELS_DIR: /app/models
+    MEDWATCH_OUTPUTS_DIR: /app/outputs
+  volumes:
+    - ./data:/app/data
+    - ./models:/app/models
+    - ./outputs:/app/outputs
+
 services:
+  # CLI avulsa: docker compose run --rm medwatch <comando>
   medwatch:
-    build: { context: ., dockerfile: docker/Dockerfile }
-    env_file:
-      - path: .env
-        required: false
+    <<: *medwatch
+    profiles: [cli]
+
+  # sem autenticação: dentro do container escuta em 0.0.0.0, mas no host só em 127.0.0.1
+  api:
+    <<: *medwatch
+    command: ["api", "--host", "0.0.0.0", "--port", "8000"]
+    ports: ["127.0.0.1:8000:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  dashboard:
+    <<: *medwatch
+    command: ["dashboard", "--host", "0.0.0.0", "--port", "8501"]
     environment:
-      MEDWATCH_DATA_DIR: /app/data
-      MEDWATCH_MODELS_DIR: /app/models
-      MEDWATCH_OUTPUTS_DIR: /app/outputs
-    volumes:
-      - ./data:/app/data
-      - ./models:/app/models
-      - ./outputs:/app/outputs
+      <<: *env
+      MEDWATCH_API_URL: http://api:8000
+    ports: ["127.0.0.1:8501:8501"]
+    depends_on:
+      api: { condition: service_healthy }
+
+  # cenário da demo enviado à API: docker compose --profile demo up
+  simulator:
+    <<: *medwatch
+    profiles: [demo]
+    command: ["simulate", "--scenario", "demo", "--target", "http://api:8000"]
+    depends_on:
+      api: { condition: service_healthy }

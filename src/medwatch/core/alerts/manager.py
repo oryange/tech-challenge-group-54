@@ -5,6 +5,7 @@ from collections.abc import AsyncIterable, Callable, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
+from typing import Protocol
 
 from loguru import logger
 
@@ -16,6 +17,12 @@ class DispatchOutcome(StrEnum):
     SENT = "sent"
     SUPPRESSED = "suppressed"
     FAILED = "failed"
+
+
+class AlertSource(Protocol):
+    """Decide os alertas de cada evento (o RiskEngine da fusão implementa este protocolo)."""
+
+    def alerts_for(self, event: ClinicalEvent) -> list[Alert]: ...
 
 
 @dataclass
@@ -92,20 +99,28 @@ class AlertManager:
         return DispatchOutcome.SENT
 
     async def consume(
-        self, events: AsyncIterable[ClinicalEvent], min_severity: Severity = Severity.MEDIUM
+        self,
+        events: AsyncIterable[ClinicalEvent],
+        min_severity: Severity = Severity.MEDIUM,
+        source: AlertSource | None = None,
     ) -> DispatchStats:
-        """Transforma eventos do barramento em alertas, um por evento acima do limiar.
+        """Transforma eventos do barramento em alertas e os entrega.
+
+        Sem `source`, cada evento acima do limiar vira um alerta (`Alert.from_event`). Com o
+        RiskEngine como `source`, todo evento passa pela fusão, inclusive os abaixo do limiar:
+        dois sinais fracos de modalidades diferentes podem somar um alerta. Em ambos os casos
+        só são entregues alertas com severidade ≥ `min_severity`; `ignored` conta os eventos
+        que não geraram nenhum.
 
         As entregas correm em paralelo (até `max_in_flight`), para que um CRITICAL não espere
-        os retries de um webhook fora do ar nos alertas anteriores. Caminho direto até o
-        RiskEngine (PR 7) assumir a fusão dos eventos.
+        os retries de um webhook fora do ar nos alertas anteriores.
         """
         stats = DispatchStats()
         slots = asyncio.Semaphore(self._max_in_flight)
 
-        async def deliver(event: ClinicalEvent) -> None:
+        async def deliver(alert: Alert) -> None:
             async with slots:
-                outcome = await self.deliver(Alert.from_event(event))
+                outcome = await self.deliver(alert)
             if outcome is DispatchOutcome.SENT:
                 stats.sent += 1
             elif outcome is DispatchOutcome.SUPPRESSED:
@@ -115,8 +130,13 @@ class AlertManager:
 
         async with asyncio.TaskGroup() as group:
             async for event in events:
-                if event.severity < min_severity:
+                if source is None:
+                    candidates = [Alert.from_event(event)] if event.severity >= min_severity else []
+                else:
+                    candidates = source.alerts_for(event)
+                alerts = [a for a in candidates if a.severity >= min_severity]
+                if not alerts:
                     stats.ignored += 1
-                    continue
-                group.create_task(deliver(event))
+                for alert in alerts:
+                    group.create_task(deliver(alert))
         return stats

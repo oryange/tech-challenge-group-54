@@ -17,7 +17,7 @@ Sistema que analisa e funde dados multimodais (vídeo, áudio e texto/sinais vit
 | Áudio + Azure (PR 4) | ✅ |
 | Vídeo: YOLOv8 + OpenPose (PR 5) | ✅ |
 | Prescrições e movimentação (PR 6) | ✅ |
-| Fusão, API e Dashboard (PR 7) | ⏳ |
+| Fusão, API e Dashboard (PR 7) | ✅ |
 | Relatório técnico e demo (PR 8) | ⏳ |
 
 ## Pré-requisitos
@@ -41,6 +41,7 @@ medwatch healthcheck
 ```bash
 make docker-build
 docker compose run --rm medwatch healthcheck
+make up      # API em :8000, dashboard em :8501 e o simulador enviando o cenário da demo
 ```
 
 ## Provisionamento Azure
@@ -102,6 +103,8 @@ Para remover tudo ao final: apague o grupo de recursos no portal (ou `az group d
 | `MEDWATCH_ALERT_COOLDOWN_MINUTES` | `15` | Janela de supressão de alertas repetidos |
 | `MEDWATCH_ALERT_WEBHOOK_URL` | — | Webhook opcional para receber os alertas |
 | `MEDWATCH_ALERT_WEBHOOK_FORMAT` | `generic` | `generic`, `teams`, `slack` ou `discord` |
+| `MEDWATCH_API_URL` | `http://localhost:8000` | API usada pelo dashboard e por `simulate --target api` |
+| `MEDWATCH_TIMEZONE` | `America/Sao_Paulo` | Fuso dos horários no dashboard (a API usa UTC) |
 | `AZURE_SPEECH_KEY` | — | Chave do recurso Speech |
 | `AZURE_SPEECH_REGION` | `brazilsouth` | Região do recurso Speech |
 | `AZURE_SPEECH_LANGUAGE` | `pt-BR` | Idioma da transcrição |
@@ -151,7 +154,7 @@ medwatch video evaluate-falls                # acurácia: calibração 01–10, 
 
 Exercícios disponíveis: `agachamento`, `agachamento_unipodal` e `elevacao_bracos`. Limiares, cenas e áreas críticas ficam em [configs/video_rules.yaml](configs/video_rules.yaml). Os pesos dos modelos são baixados para `models/` no primeiro uso, com SHA-256 conferido (YOLOv8n, YOLOv8n-pose e OpenPose).
 
-Cada análise gera em `outputs/reports/video/` um relatório HTML autocontido, um JSON com os eventos, o vídeo anotado e a série de pose (`.parquet`). Sem `--start-time`, os eventos são datados a partir do momento da análise; para fundir com os vitais (PR 7), informe o início real da gravação. Se o OpenCV não tiver H.264 (caso do pip no Linux/Docker), o vídeo anotado é convertido com o `ffmpeg` para abrir no navegador.
+Cada análise gera em `outputs/reports/video/` um relatório HTML autocontido, um JSON com os eventos, o vídeo anotado e a série de pose (`.parquet`). Sem `--start-time`, os eventos são datados a partir do momento da análise; para fundir com os vitais e o áudio, informe o início real da gravação. Se o OpenCV não tiver H.264 (caso do pip no Linux/Docker), o vídeo anotado é convertido com o `ffmpeg` para abrir no navegador.
 
 Detecção de quedas (UR Fall Dataset, conjunto de validação 11–20, sem ajuste de limiares):
 
@@ -201,7 +204,7 @@ medwatch movement evaluate                               # precision/recall/F1 c
 | Queda suspeita | pico de movimento seguido de pessoa parada fora do leito | critical |
 | Queda de atividade | atividade do dia abaixo da metade da mediana dos dias anteriores | low |
 
-Não existe dataset público de movimentação contínua em internação, então a avaliação usa internações sintéticas com confusores realistas (ida à poltrona, falhas do sensor) e anomalias injetadas (30 pacientes × 7 dias, seed 42): F1 combinado de **0,912**. A queda suspeita gera alarmes falsos em transferências bruscas para a poltrona (26 a 27 em 210 paciente-dias). O sensor sozinho não distingue a poltrona do chão, e por isso a confirmação pela queda detectada no vídeo fica para a fusão (PR 7).
+Não existe dataset público de movimentação contínua em internação, então a avaliação usa internações sintéticas com confusores realistas (ida à poltrona, falhas do sensor) e anomalias injetadas (30 pacientes × 7 dias, seed 42): F1 combinado de **0,912**. A queda suspeita gera alarmes falsos em transferências bruscas para a poltrona (26 a 27 em 210 paciente-dias). O sensor sozinho não distingue a poltrona do chão, e por isso a fusão confirma a queda com o vídeo (regra `fall_confirmed`, seção [Fusão multimodal e tempo real](#fusão-multimodal-e-tempo-real)).
 
 ## Alertas
 
@@ -235,6 +238,62 @@ MEDWATCH_ALERT_WEBHOOK_FORMAT=discord
 ```
 
 A URL do webhook dá acesso de escrita ao canal: mantenha-a só no `.env`.
+
+## Fusão multimodal e tempo real
+
+O `RiskEngine` recebe os eventos de todos os módulos e combina as modalidades por paciente (detalhes e diagrama de sequência em [docs/architecture.md](docs/architecture.md#fusão-multimodal)). Cada evento pode gerar três tipos de alerta:
+
+- **Direto**: o próprio evento, com a severidade dele. Um evento isolado nunca escala.
+- **Regra cross-modal** (`fusion.<regra>`): por exemplo, falta de ar no áudio + queda de SpO2 nos vitais em até 30 min → CRITICAL. Há 5 regras em [configs/fusion.yaml](configs/fusion.yaml): piora respiratória, queda confirmada, instabilidade após queda, efeito adverso de medicamento e alteração neurológica.
+- **Risco combinado** (`fusion.risk_score`): noisy-OR ponderado `R = 1 − Π(1 − w·score)` na janela de 30 min. Dois sinais fracos de modalidades diferentes podem virar um alerta MEDIUM, mesmo que nenhum deles alerte sozinho.
+
+```bash
+make demo                                   # = medwatch simulate --scenario demo (~40 s)
+medwatch simulate --speed 0                 # sem esperar
+medwatch simulate --replay outputs/reports/vitals_10004235.json --replay-patient PAC-010 --only-replay
+```
+
+Com vários `--replay`, os relatórios usam a mesma origem (o primeiro evento entre todos eles), então vitais e prescrições do mesmo paciente mantêm a distância real entre si.
+
+O cenário `demo` ([configs/scenarios/demo.yaml](configs/scenarios/demo.yaml)) tem 4 pacientes fictícios em 40 minutos de internação, e o comando confere o resultado contra a sequência documentada:
+
+| Min | Paciente | Alerta | Severidade | Por quê |
+|---|---|---|---|---|
+| 3 | PAC-001 | `fusion.risk_score` | medium | FC ↑ (low) + cansaço na consulta (low): nenhum alertaria sozinho |
+| 6 | PAC-001 | `audio.dyspnea_terms` / `fusion.risk_score` | medium / high | relata falta de ar; o risco combinado sobe |
+| 10 | PAC-001 | `vitals.spo2_drop` / `fusion.respiratory_deterioration` | high / **critical** | SpO2 88% + falta de ar |
+| 15 | PAC-003 | `prescription.dose_increase` | medium | morfina IV triplicada |
+| 20–21 | PAC-002 | `movement.fall_suspected`, `video.fall_detected`, `fusion.fall_confirmed` | critical | queda vista pelo sensor e pelo vídeo |
+| 25 | PAC-004 | `movement.night_bed_exit` | medium | evento isolado: não escala |
+| 30 | PAC-002 | `vitals.hr_rise` / `fusion.post_fall_instability` | medium / **critical** | taquicardia após a queda |
+| 40 | PAC-003 | `vitals.rr_drop` / `fusion.adverse_drug_event` | medium / **high** | FR 8 irpm 25 min após o aumento do opioide |
+
+Resultado: 14 alertas enviados, 2 suprimidos (nova queda de SpO2 no minuto 12, dentro do cooldown) e 2 eventos LOW sem alerta. A latência do evento ao alerta foi de 3,5 ms na mediana e 5,7 ms no máximo, medida a 600× com canais console + JSONL. O teste de integração exige < 2 s.
+
+**API e dashboard.** Use três terminais, ou `make up` com Docker:
+
+```bash
+medwatch api                          # http://localhost:8000/docs
+medwatch dashboard                    # http://localhost:8501
+medwatch simulate --target api        # envia o cenário à API em tempo real
+```
+
+| Endpoint | O que faz |
+|---|---|
+| `POST /ingest/events` | Recebe `ClinicalEvent`s já processados (simulador ou outro módulo) |
+| `POST /ingest/audio` | Upload da consulta (`file`, `patient_id`, `start_time`): Azure Speech + Language e eventos |
+| `POST /ingest/video` | Upload do vídeo (`file`, `patient_id`, `exercise`, `scene`, `backend`): pose, quedas e áreas críticas |
+| `GET /patients` | Pacientes do maior risco para o menor, com as contribuições de cada modalidade |
+| `GET /patients/{id}/risk` | Risco atual e linha do tempo multimodal do paciente |
+| `GET /alerts` · `POST /alerts/{id}/ack` | Alertas entregues (filtros `patient_id`, `acked`) e reconhecimento pela equipe |
+| `WS /ws/alerts` | Feed em tempo real: `{"type": "alert" \| "ack", "alert": {...}}` |
+| `GET /health` | Estado da API e do consumidor de eventos |
+
+![Dashboard da equipe médica](docs/img/dashboard.png)
+
+**Limitação: API e dashboard não têm autenticação.** Qualquer um que alcance a porta pode enviar eventos (inclusive um CRITICAL falso) e reconhecer alertas. Por isso `medwatch api` e `medwatch dashboard` escutam só em `127.0.0.1`, e o `docker-compose.yml` publica as portas só no localhost do host. Não exponha as portas na rede sem antes colocar autenticação (ex.: um proxy com OAuth/mTLS na frente).
+
+O estado da API fica em memória: reiniciar zera pacientes e alertas. O histórico permanente fica em `outputs/alerts/alerts.jsonl`, e os ACKs em `outputs/alerts/acks.jsonl`. Os uploads aceitam só as extensões esperadas e têm limite de tamanho. O `patient_id` precisa ser um código (letras, números, `-` e `_`), porque vira nome de arquivo do relatório.
 
 ## Áudio
 
@@ -300,6 +359,8 @@ MEDWATCH_AZURE_MOCK=true medwatch audio analyze data/samples/consulta_02_dispnei
 make lint     # ruff + mypy
 make format   # aplica correções de estilo
 make test     # testes sem Azure real e sem modelos pesados
+make demo     # cenário multimodal no terminal: eventos → fusão → alertas
+make up       # Docker: API (:8000), dashboard (:8501) e simulador da demo
 ```
 
 ## Estrutura
