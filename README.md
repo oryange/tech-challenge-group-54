@@ -1,11 +1,32 @@
 # MedWatch — Monitoramento Multimodal de Pacientes
 
+[![CI](https://github.com/oryange/tech-challenge-group-54/actions/workflows/ci.yml/badge.svg)](https://github.com/oryange/tech-challenge-group-54/actions/workflows/ci.yml)
+
 Tech Challenge Fase 4 (POS Tech IADT) — Grupo 54.
 
 Sistema que analisa e funde dados multimodais (vídeo, áudio e texto/sinais vitais) para identificar sinais precoces de risco e alertar a equipe médica, usando modelos locais (OpenPose / YOLOv8) e serviços gerenciados Azure AI (Speech to Text e Language/Text Analytics).
 
+- **Relatório técnico:** [docs/relatorio_tecnico.md](docs/relatorio_tecnico.md) (fluxo multimodal, modelos por tipo de dado, resultados e exemplos de anomalias)
+- **Vídeo de demonstração:** _link do YouTube (não listado) a incluir após a gravação_ · roteiro em [docs/roteiro_video.md](docs/roteiro_video.md)
 - Arquitetura: [docs/architecture.md](docs/architecture.md)
 - Plano de desenvolvimento e checklists de PR: [docs/plano_desenvolvimento.md](docs/plano_desenvolvimento.md)
+
+## Quickstart
+
+Sem Azure e sem Docker, em poucos minutos:
+
+```bash
+python3.11 -m venv .venv && source .venv/bin/activate
+make install                                     # dependências + hook do pre-commit
+medwatch data download                           # MIMIC-IV demo (~6 MB, SHA-256 conferido)
+
+make demo                                        # fusão multimodal em tempo real (~40 s)
+medwatch vitals analyze --patient 10004235       # sinais vitais reais com anomalias
+medwatch prescriptions analyze --patient 10004235
+MEDWATCH_AZURE_MOCK=true medwatch audio analyze data/samples/consulta_02_dispneia.wav --patient PAC-001
+```
+
+O áudio acima usa as respostas do Azure gravadas no repositório. Para o Azure real, siga [Provisionamento Azure](#provisionamento-azure). Para vídeo, baixe os exemplos com `medwatch data download --dataset videos`.
 
 ## Status
 
@@ -18,7 +39,7 @@ Sistema que analisa e funde dados multimodais (vídeo, áudio e texto/sinais vit
 | Vídeo: YOLOv8 + OpenPose (PR 5) | ✅ |
 | Prescrições e movimentação (PR 6) | ✅ |
 | Fusão, API e Dashboard (PR 7) | ✅ |
-| Relatório técnico e demo (PR 8) | ⏳ |
+| Relatório técnico e demo (PR 8) | ⏳ relatório e roteiro prontos; falta o vídeo |
 
 ## Pré-requisitos
 
@@ -87,7 +108,34 @@ Deve mostrar ✅ em `azure.speech.online` e `azure.language.online`. Se aparecer
 
 > O `.env` está no `.gitignore`: nunca commite chaves. Limite do F0: um recurso gratuito de cada tipo por assinatura.
 
-Para remover tudo ao final: apague o grupo de recursos no portal (ou `az group delete -n rg-medwatch-g54`).
+### Custo e teardown
+
+**Custo.** Com os dois recursos no **Free F0**, o projeto não tem custo. O portal mostra "Tipo de preço: Gratuito" na visão geral de cada recurso.
+
+| Recurso | Limite mensal do F0 | Uso do projeto |
+|---|---|---|
+| Speech | ~5 h de transcrição e 0,5 milhão de caracteres de síntese (TTS) | 9 chamadas no dia de testes (síntese e transcrição das 2 consultas, healthcheck e `pytest -m azure`) |
+| Language | 5 mil registros de texto por 30 dias | 25 chamadas no mesmo dia |
+
+- **Plano gratuito:** os recursos F0 não consomem o crédito da conta gratuita do Azure. A Microsoft só cobra se a conta for convertida para pagamento conforme o uso.
+- **Conferir o custo:** **Gerenciamento de Custos → Análise de custo**, filtrando pelo grupo de recursos.
+- **Ao atingir o limite:** o F0 responde HTTP 429, e o projeto repete com backoff.
+
+**Teardown, depois da entrega.** Apague o grupo de recursos, o que remove os dois recursos e as chaves:
+
+```bash
+az group delete --name rg-medwatch --yes          # grupo criado pelo portal (opção A)
+az group delete --name rg-medwatch-g54 --yes      # grupo criado por ./scripts/provision_azure.sh (opção B)
+az group list -o table                            # confere que não sobrou nada
+```
+
+Pelo portal: **Grupos de recursos → rg-medwatch → Excluir grupo de recursos**. Depois, apague as chaves do `.env` local.
+
+**Problemas comuns no provisionamento:**
+- **"Detectamos alguma atividade incomum" ao criar a conta Microsoft:** acontece em rede ou VPN corporativa. Crie a conta numa rede pessoal.
+- **A assinatura não aparece no formulário do recurso:** a assinatura nova ainda não registrou o provedor. Em **Assinaturas → Provedores de recursos**, registre `Microsoft.CognitiveServices` e recarregue a página.
+- **Região padrão errada:** o formulário vem com **East US**. Troque para **Brazil South**, que é a região dos dados (LGPD) e a esperada no `.env`.
+- **Free F0 não aparece na lista de preços:** já existe um recurso F0 do mesmo tipo na assinatura (limite de um por tipo).
 
 ## Variáveis de ambiente
 
