@@ -41,31 +41,31 @@ Comece o PR 4 cedo: provisionar o Azure (assinatura, F0, termos de IA Responsáv
 ## PR 1 — Setup e infraestrutura
 
 **Código**
-- [ ] Layout `src/medwatch/` instalável (`pip install -e .`) com entrypoint `medwatch`
-- [ ] `config.py` com `pydantic-settings`: prefixos `MEDWATCH_` e `AZURE_`, chaves como `SecretStr`, `ensure_dirs()`
-- [ ] `log.py`: saída texto/JSON configurável e arquivo rotativo em `outputs/logs/`
-- [ ] `cli.py` com `medwatch healthcheck` (offline, `--online` para Azure, exit code ≠ 0 se algo obrigatório falhar)
-- [ ] Esqueleto dos pacotes (`core`, `video`, `audio`, `anomaly`, `fusion`, `api`, `dashboard`)
+- [x] Layout `src/medwatch/` instalável (`pip install -e .`) com entrypoint `medwatch`
+- [x] `config.py` com `pydantic-settings`: prefixos `MEDWATCH_` e `AZURE_`, chaves como `SecretStr`, `ensure_dirs()`
+- [x] `log.py`: saída texto/JSON configurável e arquivo rotativo em `outputs/logs/`
+- [x] `cli.py` com `medwatch healthcheck` (offline, `--online` para Azure, exit code ≠ 0 se algo obrigatório falhar)
+- [x] Esqueleto dos pacotes (`core`, `video`, `audio`, `anomaly`, `fusion`, `api`, `dashboard`)
 
 **Dependências / Infra**
-- [ ] `requirements.txt` único (piso + teto no próximo major, comentários) terminando em `-e .`; `pyproject.toml` só com metadados e config de ferramentas
-- [ ] `docker/Dockerfile` (python 3.11 slim-bookworm, torch CPU, ffmpeg, libs do Speech SDK, usuário não-root) builda sem erro
-- [ ] `docker-compose.yml` com volumes `data/`, `models/`, `outputs/` e `.env`
-- [ ] `scripts/provision_azure.sh` idempotente (RG, Speech F0, Language F0, imprime variáveis)
-- [ ] `.gitignore`, `.env.example`, `.pre-commit-config.yaml`, `Makefile`
-- [ ] `.github/workflows/ci.yml` e `.github/pull_request_template.md`
+- [x] `requirements.txt` único (piso + teto no próximo major, comentários) terminando em `-e .`; `pyproject.toml` só com metadados e config de ferramentas
+- [ ] `docker/Dockerfile` (python 3.11 slim-bookworm, torch CPU, ffmpeg, libs do Speech SDK, usuário não-root) builda sem erro (não validado: Docker indisponível nas máquinas do grupo)
+- [x] `docker-compose.yml` com volumes `data/`, `models/`, `outputs/` e `.env`
+- [ ] `scripts/provision_azure.sh` idempotente (RG, Speech F0, Language F0, imprime variáveis) (não executado: os recursos foram criados pelo portal, como na opção A do README)
+- [x] `.gitignore`, `.env.example`, `.pre-commit-config.yaml`, `Makefile`
+- [x] `.github/workflows/ci.yml` e `.github/pull_request_template.md`
 
 **Testes**
-- [ ] `test_config.py`: override por env, Azure não configurado sem chaves, `ensure_dirs` em `tmp_path`
-- [ ] `test_cli.py`: `healthcheck` sai com 0 sem Azure; `--strict` sai com 1
-- [ ] `docker compose run --rm medwatch healthcheck` executa
+- [x] `test_config.py`: override por env, Azure não configurado sem chaves, `ensure_dirs` em `tmp_path`
+- [x] `test_cli.py`: `healthcheck` sai com 0 sem Azure; `--strict` sai com 1
+- [ ] `docker compose run --rm medwatch healthcheck` executa (não validado: Docker indisponível)
 
 **README**
-- [ ] Visão geral, pré-requisitos, setup local e Docker, provisionamento Azure, tabela de variáveis
+- [x] Visão geral, pré-requisitos, setup local e Docker, provisionamento Azure, tabela de variáveis
 
 **Validação**
-- [ ] `medwatch healthcheck` imprime a tabela ✅/❌ e grava `outputs/logs/medwatch.log`
-- [ ] `medwatch healthcheck --online` com `.env` real retorna ✅ em `azure.language.online` (evidência no PR, chaves mascaradas)
+- [x] `medwatch healthcheck` imprime a tabela ✅/❌ e grava `outputs/logs/medwatch.log`
+- [x] `medwatch healthcheck --online` com `.env` real retorna ✅ em `azure.language.online` (evidência no PR, chaves mascaradas)
 
 ## PR 2 — Core: eventos, barramento e alertas
 
@@ -89,93 +89,93 @@ Comece o PR 4 cedo: provisionar o Azure (assinatura, F0, termos de IA Responsáv
 - [x] `docs/architecture.md` atualizado; `docs/adr/0001-late-fusion-event-driven.md`
 
 **Validação**
-- [ ] `medwatch alerts demo` emite alerta fake no console, em `alerts.jsonl` (JSON válido por linha) e no webhook de teste (screenshot)
+- [ ] `medwatch alerts demo` emite alerta fake no console, em `alerts.jsonl` (JSON válido por linha) e no webhook de teste (screenshot) (console e `alerts.jsonl` ok; falta o screenshot do webhook real)
 
 ## PR 3 — Anomalias em sinais vitais
 
 **Código**
-- [ ] `medwatch data download` baixa o MIMIC-IV demo, verifica SHA-256 e é idempotente (BIDMC fica para o simulador do PR 7)
-- [ ] `anomaly/detectors.py`: `ThresholdRule`, `RobustZScore` (mediana/MAD por paciente, janela rolante), `IsolationForestDetector` (features: valor do momento e variação de 1 h; média, desvio e slope em janela ficaram como evolução, ver `docs/relatorio_vitais.md`)
-- [ ] `anomaly/vitals.py`: normaliza itemids MIMIC (HR, SBP, DBP, SpO2, RR, Temp), calcula NEWS2, emite `ClinicalEvent(source=vitals)`
-- [ ] Limiares em `configs/thresholds.yaml` com referência clínica
-- [ ] Tratamento de gaps e artefatos de sensor (SpO2 = 0 é artefato)
+- [x] `medwatch data download` baixa o MIMIC-IV demo, verifica SHA-256 e é idempotente (BIDMC fica para o simulador do PR 7)
+- [x] `anomaly/detectors.py`: `ThresholdRule`, `RobustZScore` (mediana/MAD por paciente, janela rolante), `IsolationForestDetector` (features: valor do momento e variação de 1 h; média, desvio e slope em janela ficaram como evolução, ver `docs/relatorio_vitais.md`)
+- [x] `anomaly/vitals.py`: normaliza itemids MIMIC (HR, SBP, DBP, SpO2, RR, Temp), calcula NEWS2, emite `ClinicalEvent(source=vitals)`
+- [x] Limiares em `configs/thresholds.yaml` com referência clínica
+- [x] Tratamento de gaps e artefatos de sensor (SpO2 = 0 é artefato)
 
 **Dependências**
-- [ ] Seção "Anomalias" do `requirements.txt` revisada (`scikit-learn`, `wfdb`, `pandas`)
+- [x] Seção "Anomalias" do `requirements.txt` revisada (`scikit-learn`, `wfdb`, `pandas`)
 
 **Testes**
-- [ ] Spike sintético detectado; série estável sem evento
-- [ ] NEWS2 parametrizado com casos conhecidos
-- [ ] Artefato filtrado
-- [ ] `@slow` em paciente real do demo
+- [x] Spike sintético detectado; série estável sem evento
+- [x] NEWS2 parametrizado com casos conhecidos
+- [x] Artefato filtrado
+- [x] `@slow` em paciente real do demo
 
 **Docs**
-- [ ] Seção "Sinais vitais" no README: dataset, download, `medwatch vitals analyze --patient <id>`
+- [x] Seção "Sinais vitais" no README: dataset, download, `medwatch vitals analyze --patient <id>`
 
 **Validação**
-- [ ] Precision/recall/F1 sobre anomalias injetadas
-- [ ] Gráfico com anomalias marcadas em `outputs/reports/vitals_<id>.png`
-- [ ] Severidade dos eventos coerente com NEWS2
+- [x] Precision/recall/F1 sobre anomalias injetadas
+- [x] Gráfico com anomalias marcadas em `outputs/reports/vitals_<id>.png`
+- [x] Severidade dos eventos coerente com NEWS2
 
 ## PR 4 — Áudio: Azure Speech + Azure Language + acústica
 
 **Código**
-- [ ] `preprocessing.py`: qualquer formato → wav PCM 16 kHz mono (ffmpeg), valida duração
-- [ ] `azure_stt.py`: reconhecimento contínuo, `pt-BR`, timestamps por palavra, diarização opcional (`ConversationTranscriber`)
-- [ ] `azure_language.py`: Sentiment com opinion mining, Text Analytics for Health (sintomas, medicamentos, negação), batching nos limites da API; confirmar suporte a pt-BR no Health, com fallback no dicionário
-- [ ] `critical_terms.py`: `configs/critical_terms.yaml` com normalização e respeito à negação
-- [ ] `acoustic.py`: F0 (média/variância), jitter, shimmer, HNR (parselmouth), taxa de fala/articulação, pausas
-- [ ] Indicadores de fadiga, disartria e dificuldade respiratória via z-score contra baseline, documentados como triagem
-- [ ] Retry com backoff (429/5xx), timeout, modo mock (`MEDWATCH_AZURE_MOCK=true`)
-- [ ] Nenhum áudio ou transcrição com PII em log
+- [x] `preprocessing.py`: qualquer formato → wav PCM 16 kHz mono, valida duração (via soundfile dentro do processo, sem ffmpeg por subprocess)
+- [x] `azure_stt.py`: reconhecimento contínuo, `pt-BR`, timestamps por palavra, diarização opcional (`ConversationTranscriber`)
+- [x] `azure_language.py`: Sentiment com opinion mining, Text Analytics for Health (sintomas, medicamentos, negação), batching nos limites da API; confirmar suporte a pt-BR no Health, com fallback no dicionário
+- [x] `critical_terms.py`: `configs/critical_terms.yaml` com normalização e respeito à negação
+- [x] `acoustic.py`: F0 (média/variância), jitter, shimmer, HNR (parselmouth), taxa de fala/articulação, pausas
+- [x] Indicadores de fadiga, disartria e dificuldade respiratória via z-score contra baseline, documentados como triagem
+- [x] Retry com backoff (429/5xx), timeout, modo mock (`MEDWATCH_AZURE_MOCK=true`)
+- [x] Nenhum áudio ou transcrição com PII em log
 
 **Dependências / Infra**
-- [ ] Seção "Áudio" do `requirements.txt` revisada; Dockerfile com `libasound2`, `libssl3`, `ca-certificates`
+- [x] Seção "Áudio" do `requirements.txt` revisada; Dockerfile com `libasound2`, `libssl3`, `ca-certificates`
 
 **Testes**
-- [ ] Mocks dos clientes Azure (fixtures em `tests/fixtures/azure/`)
-- [ ] Features acústicas em tom sintético (F0 ±5%)
-- [ ] "não tenho falta de ar" não dispara termo crítico
-- [ ] `@azure`: transcrição real de `data/samples/consulta_01.wav`
+- [x] Mocks dos clientes Azure (fixtures em `tests/fixtures/azure/`)
+- [x] Features acústicas em tom sintético (F0 ±5%)
+- [x] "não tenho falta de ar" não dispara termo crítico
+- [x] `@azure`: transcrição real de `data/samples/consulta_01.wav`
 
 **Docs**
-- [ ] Seção "Áudio": `medwatch audio analyze <arquivo>` e explicação das features
-- [ ] ADR de LGPD (o que vai para o Azure × local)
+- [x] Seção "Áudio": `medwatch audio analyze <arquivo>` e explicação das features
+- [x] ADR de LGPD (o que vai para o Azure × local)
 
 **Validação**
-- [ ] `outputs/reports/audio_<id>.json` com transcrição, sentimento, entidades, termos críticos e features
-- [ ] Consulta fatigada/dispneica gera evento ≥ medium; a normal não
-- [ ] Evidência: JSON e print das métricas do recurso no portal Azure
+- [x] `outputs/reports/audio_<id>.json` com transcrição, sentimento, entidades, termos críticos e features
+- [ ] Consulta fatigada/dispneica gera evento ≥ medium; a normal não (dispneica ok; a normal só não gera evento com `--baseline`, ver limitação no README)
+- [x] Evidência: JSON e print das métricas do recurso no portal Azure
 
 ## PR 5 — Vídeo: YOLOv8 + OpenPose
 
 **Código**
-- [ ] `video/pose/keypoints.py`: esquema comum (BODY_25 ↔ COCO-17) com confiança por ponto
-- [ ] `PoseEstimator` (ABC), `YoloPoseEstimator` (padrão), `OpenPoseEstimator` (rede da CMU em PyTorch) e leitura dos JSON do binário oficial
-- [ ] `objects.py`: YOLOv8 com tracking (ByteTrack) e ROIs críticas em `video_rules.yaml`
-- [ ] `rules.py`: ângulos vs. faixa esperada, assimetria, compensação de tronco, queda (velocidade do quadril + razão de aspecto), invasão de ROI
-- [ ] Amostragem de frames configurável e suavização temporal dos keypoints
-- [ ] `report.py`: relatório HTML e JSON (timeline, frames anotados, % fora do padrão, recomendações)
-- [ ] Exporta série temporal de pose (`parquet`) para o PR 6
+- [x] `video/pose/keypoints.py`: esquema comum (BODY_25 ↔ COCO-17) com confiança por ponto
+- [x] `PoseEstimator` (ABC), `YoloPoseEstimator` (padrão), `OpenPoseEstimator` (rede da CMU em PyTorch) e leitura dos JSON do binário oficial
+- [x] `objects.py`: YOLOv8 com tracking (ByteTrack) e ROIs críticas em `video_rules.yaml`
+- [x] `rules.py`: ângulos vs. faixa esperada, assimetria, compensação de tronco, queda (velocidade do quadril + razão de aspecto), invasão de ROI
+- [x] Amostragem de frames configurável e suavização temporal dos keypoints
+- [x] `report.py`: relatório HTML e JSON (timeline, frames anotados, % fora do padrão, recomendações)
+- [x] Exporta série temporal de pose (`parquet`) para o PR 6
 
 **Dependências / Infra**
-- [ ] Seção "Vídeo" do `requirements.txt` revisada; pesos baixados em `models/` sob demanda
-- [ ] Decisão sobre o OpenPose registrada em ADR (OpenCV 5 sem Caffe; rede portada para PyTorch) e avisos de licença em `THIRD_PARTY_NOTICES.md`
+- [x] Seção "Vídeo" do `requirements.txt` revisada; pesos baixados em `models/` sob demanda
+- [x] Decisão sobre o OpenPose registrada em ADR (OpenCV 5 sem Caffe; rede portada para PyTorch) e avisos de licença em `THIRD_PARTY_NOTICES.md`
 
 **Testes**
-- [ ] Ângulos com keypoints sintéticos (90°, 180°)
-- [ ] Mapeamento BODY_25 → COCO
-- [ ] Queda vs. sentar devagar com sequência sintética
-- [ ] `@slow`: clipe de 5 s em `data/samples/`
+- [x] Ângulos com keypoints sintéticos (90°, 180°)
+- [x] Mapeamento BODY_25 → COCO
+- [x] Queda vs. sentar devagar com sequência sintética
+- [ ] `@slow`: clipe de 5 s em `data/samples/` (não versionado: o teste `slow` de `tests/unit/video/test_real_models.py` usa os vídeos baixados por `medwatch data download --dataset videos`, para não colocar vídeo no repositório)
 
 **Docs**
-- [ ] Seção "Vídeo": `medwatch video analyze <video> --exercise agachamento --backend yolo|openpose`; ADR do backend dual
+- [x] Seção "Vídeo": `medwatch video analyze <video> --exercise agachamento --backend yolo|openpose`; ADR do backend dual
 
 **Validação**
-- [ ] Vídeo anotado e relatório HTML abrindo no browser
-- [ ] Execução incorreta gera desvios; correta gera pouquíssimos
-- [ ] Ao menos uma execução com OpenPose registrada
-- [ ] FPS medido (CPU vs. GPU)
+- [x] Vídeo anotado e relatório HTML abrindo no browser
+- [x] Execução incorreta gera desvios; correta gera pouquíssimos
+- [x] Ao menos uma execução com OpenPose registrada
+- [ ] FPS medido (CPU vs. GPU) (medido em CPU/MPS no `relatorio_video.md`; sem GPU CUDA disponível)
 
 ## PR 6 — Prescrições e movimentação
 
@@ -224,9 +224,9 @@ Comece o PR 4 cedo: provisionar o Azure (assinatura, F0, termos de IA Responsáv
 
 ## PR 8 — Relatório técnico, demo e hardening
 
-- [ ] `docs/relatorio_tecnico.md` (e PDF): fluxo multimodal, modelos por tipo de dado, datasets, métricas, exemplos reais de anomalias, limitações, LGPD/ética, trabalhos futuros
-- [ ] `docs/roteiro_video.md` (≤ 15 min): arquitetura (2), vídeo (3), áudio/Azure (3), vitais/prescrição (2), fusão e alerta (3), conclusão (2)
-- [ ] README final: badge do CI, quickstart, link do vídeo (YouTube não listado)
+- [ ] `docs/relatorio_tecnico.md` (e PDF): fluxo multimodal, modelos por tipo de dado, datasets, métricas, exemplos reais de anomalias, limitações, LGPD/ética, trabalhos futuros (markdown pronto; falta o PDF)
+- [x] Roteiro do vídeo (≤ 15 min): arquitetura, vídeo, áudio/Azure, vitais/prescrição, fusão e alerta, conclusão (13 min 30 s + folga; mantido fora do repositório, é material de gravação)
+- [ ] README final: badge do CI, quickstart, link do vídeo (YouTube não listado) (badge e quickstart prontos; falta o link do vídeo)
 - [ ] Clone limpo + `make install && make demo` testado por quem não escreveu o código
-- [ ] Custo Azure verificado e teardown documentado
+- [ ] Custo Azure verificado e teardown documentado (teardown e limites do F0 no README; conferir a Análise de custo depois da gravação)
 - [ ] Tag `v1.0.0` e release no GitHub
