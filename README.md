@@ -7,7 +7,7 @@ Tech Challenge Fase 4 (POS Tech IADT) — Grupo 54.
 Sistema que analisa e funde dados multimodais (vídeo, áudio e texto/sinais vitais) para identificar sinais precoces de risco e alertar a equipe médica, usando modelos locais (OpenPose / YOLOv8) e serviços gerenciados Azure AI (Speech to Text e Language/Text Analytics).
 
 - **Relatório técnico:** [docs/relatorio_tecnico.md](docs/relatorio_tecnico.md) (fluxo multimodal, modelos por tipo de dado, resultados e exemplos de anomalias)
-- **Vídeo de demonstração:** _link do YouTube (não listado) a incluir após a gravação_ · roteiro em [docs/roteiro_video.md](docs/roteiro_video.md)
+- **Vídeo de demonstração:** _link do YouTube (não listado) a incluir após a gravação_
 - Arquitetura: [docs/architecture.md](docs/architecture.md)
 - Plano de desenvolvimento e checklists de PR: [docs/plano_desenvolvimento.md](docs/plano_desenvolvimento.md)
 
