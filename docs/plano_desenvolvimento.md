@@ -166,7 +166,7 @@ Comece o PR 4 cedo: provisionar o Azure (assinatura, F0, termos de IA Responsáv
 - [x] Ângulos com keypoints sintéticos (90°, 180°)
 - [x] Mapeamento BODY_25 → COCO
 - [x] Queda vs. sentar devagar com sequência sintética
-- [ ] `@slow`: clipe de 5 s em `data/samples/`
+- [ ] `@slow`: clipe de 5 s em `data/samples/` (não versionado: o teste `slow` de `tests/unit/video/test_real_models.py` usa os vídeos baixados por `medwatch data download --dataset videos`, para não colocar vídeo no repositório)
 
 **Docs**
 - [x] Seção "Vídeo": `medwatch video analyze <video> --exercise agachamento --backend yolo|openpose`; ADR do backend dual

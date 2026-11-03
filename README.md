@@ -39,7 +39,7 @@ O áudio acima usa as respostas do Azure gravadas no repositório. Para o Azure 
 | Vídeo: YOLOv8 + OpenPose (PR 5) | ✅ |
 | Prescrições e movimentação (PR 6) | ✅ |
 | Fusão, API e Dashboard (PR 7) | ✅ |
-| Relatório técnico e demo (PR 8) | ⏳ relatório e roteiro prontos; falta o vídeo |
+| Relatório técnico e demo (PR 8) | ⏳ relatório pronto; faltam o vídeo e o PDF |
 
 ## Pré-requisitos
 
@@ -119,7 +119,7 @@ Deve mostrar ✅ em `azure.speech.online` e `azure.language.online`. Se aparecer
 
 - **Plano gratuito:** os recursos F0 não consomem o crédito da conta gratuita do Azure. A Microsoft só cobra se a conta for convertida para pagamento conforme o uso.
 - **Conferir o custo:** **Gerenciamento de Custos → Análise de custo**, filtrando pelo grupo de recursos.
-- **Ao atingir o limite:** o F0 responde HTTP 429, e o projeto repete com backoff.
+- **Ao atingir o limite:** em pico de requisições, o F0 responde HTTP 429 e o projeto repete com backoff. Se a cota mensal acabar, as chamadas falham até a renovação; use `MEDWATCH_AZURE_MOCK=true` para continuar sem o Azure.
 
 **Teardown, depois da entrega.** Apague o grupo de recursos, o que remove os dois recursos e as chaves:
 

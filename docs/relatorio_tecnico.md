@@ -174,7 +174,7 @@ Configurada em `configs/fusion.yaml`. Para cada evento, o `RiskEngine` pode gera
    - Cada (fonte, tipo) conta uma vez, pelo maior score, porque três quedas de SpO2 seguidas não são três evidências independentes.
    - O alerta só sai com ≥ 2 modalidades e quando a faixa de R supera o pior evento individual. Assim, dois sinais fracos de modalidades diferentes podem somar um alerta que nenhum deles daria sozinho.
 
-O `AlertManager` aplica depois a severidade mínima, a deduplicação por paciente e tipo de alerta, e o cooldown. Uma piora de severidade sempre passa pelo cooldown.
+O `AlertManager` aplica depois a severidade mínima, a deduplicação por paciente e tipo de alerta, e o cooldown. Uma piora de severidade sempre é entregue, mesmo dentro do cooldown.
 
 ## 6. Resultados
 
@@ -338,7 +338,7 @@ Saíram 14 alertas enviados, 2 suprimidos pelo cooldown e 2 eventos LOW sem aler
 | API + WebSocket `/ws/alerts` + dashboard | Pacientes por risco, feed em tempo real, ACK e linha do tempo multimodal |
 
 - Cada alerta traz os eventos que o motivaram (`reasons`) e uma ação recomendada pela severidade. Por exemplo, CRITICAL: "Acionar a equipe de resposta rápida imediatamente".
-- O cooldown só começa a contar quando pelo menos um canal entregou o alerta. Com o webhook fora do ar, a repetição seguinte é tentada de novo.
+- O cooldown só começa a contar quando pelo menos um canal entrega o alerta. Se todos os canais falharem, a repetição seguinte é tentada de novo. Uma falha só no webhook não reabre o envio, porque o console e o `alerts.jsonl` já registraram o alerta.
 - As entregas correm em paralelo, para que um CRITICAL não espere os retries de alertas anteriores.
 
 ## 9. LGPD e ética
