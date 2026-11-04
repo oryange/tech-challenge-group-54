@@ -89,7 +89,7 @@ Comece o PR 4 cedo: provisionar o Azure (assinatura, F0, termos de IA Responsáv
 - [x] `docs/architecture.md` atualizado; `docs/adr/0001-late-fusion-event-driven.md`
 
 **Validação**
-- [ ] `medwatch alerts demo` emite alerta fake no console, em `alerts.jsonl` (JSON válido por linha) e no webhook de teste (screenshot) (console e `alerts.jsonl` ok; falta o screenshot do webhook real)
+- [x] `medwatch alerts demo` emite alerta fake no console, em `alerts.jsonl` (JSON válido por linha) e no webhook de teste (screenshot em `docs/img/alerta_webhook_discord.png`, webhook real do Discord)
 
 ## PR 3 — Anomalias em sinais vitais
 

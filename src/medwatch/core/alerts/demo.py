@@ -76,7 +76,8 @@ def demo_events(start: datetime | None = None) -> list[ClinicalEvent]:
 
 async def run_demo(settings: Settings) -> DispatchStats:
     bus = InMemoryEventBus()
-    manager = build_alert_manager(settings)
+    # um alerta por vez: no chat as mensagens chegam na ordem do cenário (HIGH antes do CRITICAL)
+    manager = build_alert_manager(settings, max_in_flight=1)
     consumer = asyncio.create_task(
         manager.consume(bus.subscribe(), min_severity=settings.alert_min_severity)
     )

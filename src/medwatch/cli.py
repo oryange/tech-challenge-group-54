@@ -147,8 +147,10 @@ def healthcheck(
 def alerts_demo() -> None:
     """Dispara um cenário fictício pelo fluxo completo de alertas."""
     from medwatch.core.alerts.demo import run_demo
+    from medwatch.core.alerts.factory import describe_channels
 
     settings = get_settings()
+    typer.echo(f"Canais: {describe_channels(settings)}")
     stats = asyncio.run(run_demo(settings))
     typer.echo(
         f"\nAlertas enviados: {stats.sent} · suprimidos (cooldown): {stats.suppressed} · "
@@ -157,3 +159,33 @@ def alerts_demo() -> None:
     if stats.failed:
         typer.echo(f"Sem entrega em nenhum canal: {stats.failed}", err=True)
     typer.echo(f"Histórico: {settings.alerts_file}")
+
+
+@alerts_app.command("test-webhook")
+def alerts_test_webhook() -> None:
+    """Envia uma mensagem de teste só para o webhook do .env (conferir antes de uma demo)."""
+    from medwatch.core.alerts.channels import ChannelError, WebhookChannel
+    from medwatch.core.events import Alert, ClinicalEvent, Severity, Source
+
+    settings = get_settings()
+    url = settings.alert_webhook_url.get_secret_value() if settings.alert_webhook_url else ""
+    if not url:
+        typer.echo(
+            "MEDWATCH_ALERT_WEBHOOK_URL não configurado: veja a seção 'Alertas' do README.",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+    event = ClinicalEvent(
+        patient_id="PAC-TESTE",
+        source=Source.FUSION,
+        type="webhook_test",
+        score=0.0,
+        severity=Severity.INFO,
+    )
+    alert = Alert.from_event(event, title="Teste de conexão do webhook do MedWatch")
+    try:
+        asyncio.run(WebhookChannel(url, fmt=settings.alert_webhook_format).send(alert))
+    except ChannelError as exc:
+        typer.echo(f"❌ {exc}. Confira a URL e o formato no .env.", err=True)
+        raise typer.Exit(code=1) from exc
+    typer.echo(f"✅ Mensagem de teste entregue no webhook ({settings.alert_webhook_format}).")

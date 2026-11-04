@@ -341,6 +341,10 @@ Saíram 14 alertas enviados, 2 suprimidos pelo cooldown e 2 eventos LOW sem aler
 - O cooldown só começa a contar quando pelo menos um canal entrega o alerta. Se todos os canais falharem, a repetição seguinte é tentada de novo. Uma falha só no webhook não reabre o envio, porque o console e o `alerts.jsonl` já registraram o alerta.
 - As entregas correm em paralelo, para que um CRITICAL não espere os retries de alertas anteriores.
 
+Com o webhook do Discord configurado no `.env`, o `medwatch alerts demo` entrega no canal os 4 alertas do cenário, um por vez e na ordem dos eventos (no tempo real as entregas continuam em paralelo). O SpO2 repetido dentro do cooldown é suprimido, e a atividade baixa (LOW) não gera alerta. As mensagens levam só o resumo (tipo, score e horário), sem o `evidence`.
+
+![Alertas do cenário de demonstração recebidos no Discord pelo webhook](img/alerta_webhook_discord.png)
+
 ## 9. LGPD e ética
 
 Os detalhes estão no [ADR 0003](adr/0003-lgpd-audio-azure.md).

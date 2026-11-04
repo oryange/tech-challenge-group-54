@@ -1,3 +1,5 @@
+import asyncio
+
 import httpx
 import pytest
 from typer.testing import CliRunner
@@ -5,6 +7,8 @@ from typer.testing import CliRunner
 from medwatch import cli
 from medwatch.cli import app
 from medwatch.config import get_settings
+from medwatch.core.alerts import ChannelError, WebhookChannel
+from medwatch.core.events import Alert, Severity
 
 runner = CliRunner()
 
@@ -80,3 +84,70 @@ def test_alerts_demo_writes_history():
     )
     history = get_settings().alerts_file.read_text(encoding="utf-8").splitlines()
     assert len(history) == 4
+
+
+def test_alerts_demo_lists_channels_without_webhook():
+    result = runner.invoke(app, ["alerts", "demo"])
+    assert "Canais: console, jsonl\n" in result.stdout
+
+
+@pytest.fixture
+def webhook_env(monkeypatch):
+    monkeypatch.setenv("MEDWATCH_ALERT_WEBHOOK_URL", "https://hooks.example.com/segredo")
+    monkeypatch.setenv("MEDWATCH_ALERT_WEBHOOK_FORMAT", "discord")
+    get_settings.cache_clear()
+
+
+def recording_webhook(monkeypatch, delays: list[float] | None = None) -> list[Alert]:
+    """Troca o envio HTTP do webhook por um registro dos alertas (com atraso opcional)."""
+    sent: list[Alert] = []
+    pending = list(delays or [])
+
+    async def send(self, alert: Alert) -> None:
+        await asyncio.sleep(pending.pop(0) if pending else 0)
+        sent.append(alert)
+
+    monkeypatch.setattr(WebhookChannel, "send", send)
+    return sent
+
+
+def test_alerts_demo_delivers_webhook_in_scenario_order(webhook_env, monkeypatch):
+    # o primeiro alerta é o mais lento: em paralelo ele chegaria por último no chat
+    sent = recording_webhook(monkeypatch, delays=[0.05, 0.0, 0.0, 0.0])
+    result = runner.invoke(app, ["alerts", "demo"])
+    assert result.exit_code == 0
+    assert "Canais: console, jsonl, webhook (discord)" in result.stdout
+    assert "segredo" not in result.stdout
+    assert [(a.patient_id, a.alert_type, a.severity) for a in sent] == [
+        ("PAC-001", "vitals.spo2_drop", Severity.HIGH),
+        ("PAC-001", "audio.dyspnea_terms", Severity.MEDIUM),
+        ("PAC-001", "vitals.spo2_drop", Severity.CRITICAL),
+        ("PAC-002", "video.fall_detected", Severity.CRITICAL),
+    ]
+
+
+def test_alerts_test_webhook_requires_url():
+    result = runner.invoke(app, ["alerts", "test-webhook"])
+    assert result.exit_code == 1
+    assert "MEDWATCH_ALERT_WEBHOOK_URL" in result.stderr
+
+
+def test_alerts_test_webhook_sends_one_message(webhook_env, monkeypatch):
+    sent = recording_webhook(monkeypatch)
+    result = runner.invoke(app, ["alerts", "test-webhook"])
+    assert result.exit_code == 0
+    assert "✅" in result.stdout
+    assert len(sent) == 1
+    assert sent[0].patient_id == "PAC-TESTE"
+    assert not get_settings().alerts_file.exists()  # teste não entra no histórico
+
+
+def test_alerts_test_webhook_reports_failure(webhook_env, monkeypatch):
+    async def send(self, alert: Alert) -> None:
+        raise ChannelError("Webhook recusou o alerta (HTTP 404)")
+
+    monkeypatch.setattr(WebhookChannel, "send", send)
+    result = runner.invoke(app, ["alerts", "test-webhook"])
+    assert result.exit_code == 1
+    assert "HTTP 404" in result.stderr
+    assert "segredo" not in result.stderr
