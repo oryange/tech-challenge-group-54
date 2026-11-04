@@ -287,6 +287,15 @@ MEDWATCH_ALERT_WEBHOOK_FORMAT=discord
 
 A URL do webhook dá acesso de escrita ao canal: mantenha-a só no `.env`.
 
+Para conferir a configuração antes de uma demonstração:
+
+```bash
+medwatch alerts test-webhook   # envia 1 mensagem de teste só para o webhook; sai com erro se falhar
+medwatch alerts demo           # a 1ª linha mostra os canais ativos, ex.: "Canais: console, jsonl, webhook (discord)"
+```
+
+No `alerts demo`, os alertas são entregues um por vez, para chegarem ao chat na ordem do cenário (o HIGH antes do CRITICAL do mesmo paciente). Na API e no simulador, as entregas continuam em paralelo. Se o webhook falhar durante o demo, o console mostra `Canal webhook falhou ...`, e o resumo ainda conta o alerta como enviado, porque o console e o `alerts.jsonl` o registraram.
+
 ## Fusão multimodal e tempo real
 
 O `RiskEngine` recebe os eventos de todos os módulos e combina as modalidades por paciente (detalhes e diagrama de sequência em [docs/architecture.md](docs/architecture.md#fusão-multimodal)). Cada evento pode gerar três tipos de alerta:
