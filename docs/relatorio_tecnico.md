@@ -2,7 +2,11 @@
 
 **Tech Challenge, Fase 4 · Pós-Tech IA para Devs (FIAP) · Grupo 54**
 
+Integrantes: Oryange Strifezze e Larissa Nunes
+
 Repositório: https://github.com/oryange/tech-challenge-group-54
+
+Vídeo de demonstração: _link do YouTube (não listado) a incluir após a gravação_
 
 ## 1. Resumo
 
@@ -27,7 +31,7 @@ A análise de áudio usa **Azure Speech to Text** e **Azure AI Language (Text An
 | Sinais vitais | NEWS2 + z-score robusto + Isolation Forest | F1 combinado 0,882 (anomalias injetadas em 116 internações reais) |
 | Prescrições | Regras (salto de dose, duplicidade, suspensão) + Isolation Forest | F1 das regras 0,878–0,899 (178 internações reais) |
 | Movimentação | Regras de duração e de pico sobre a série por minuto | F1 combinado 0,912–0,949 (internações sintéticas) |
-| Fusão | Regras cross-modal + noisy-OR ponderado | Cenário de demonstração com 14 alertas, todos conferidos; latência mediana de ~3,5 ms |
+| Fusão | Regras cross-modal + noisy-OR ponderado | Cenário de demonstração com 14 alertas, todos conferidos; latência mediana de poucos ms (sem webhook) |
 
 ## 2. Problema e objetivos
 
@@ -310,7 +314,11 @@ O cenário `configs/scenarios/demo.yaml` tem 4 pacientes fictícios em 40 minuto
 | 30 | PAC-002 | `vitals.hr_rise` / `fusion.post_fall_instability` | medium / **critical** | taquicardia após a queda |
 | 40 | PAC-003 | `vitals.rr_drop` / `fusion.adverse_drug_event` | medium / **high** | FR 8 irpm 25 min depois do aumento do opioide |
 
-Saíram 14 alertas enviados, 2 suprimidos pelo cooldown e 2 eventos LOW sem alerta. A **latência do evento ao alerta** teve mediana de ~3,5 ms e máximo abaixo de 6 ms, e o teste de integração exige < 2 s.
+Saíram 14 alertas enviados, 2 suprimidos pelo cooldown e 2 eventos LOW sem alerta. A **latência do evento ao alerta** depende dos canais ativos:
+- só com console e `alerts.jsonl`: mediana de 2 a 4 ms e máximo abaixo de 6 ms, conforme a execução;
+- com o webhook do Discord ligado: mediana de ~23 ms e máximo de ~230 ms, que é o tempo de ida e volta da chamada HTTP ao Discord.
+
+Nos dois casos, a latência fica bem abaixo dos 2 s que o teste de integração exige.
 
 ![Dashboard da equipe médica](img/dashboard.png)
 
