@@ -325,7 +325,7 @@ O cenário `demo` ([configs/scenarios/demo.yaml](configs/scenarios/demo.yaml)) t
 | 30 | PAC-002 | `vitals.hr_rise` / `fusion.post_fall_instability` | medium / **critical** | taquicardia após a queda |
 | 40 | PAC-003 | `vitals.rr_drop` / `fusion.adverse_drug_event` | medium / **high** | FR 8 irpm 25 min após o aumento do opioide |
 
-Resultado: 14 alertas enviados, 2 suprimidos (nova queda de SpO2 no minuto 12, dentro do cooldown) e 2 eventos LOW sem alerta. A latência do evento ao alerta foi de 3,5 ms na mediana e 5,7 ms no máximo, medida a 600× com canais console + JSONL. O teste de integração exige < 2 s.
+Resultado: 14 alertas enviados, 2 suprimidos (nova queda de SpO2 no minuto 12, dentro do cooldown) e 2 eventos LOW sem alerta. A latência do evento ao alerta foi de 3,5 ms na mediana e 5,7 ms no máximo, medida a 600× com canais console + JSONL. Com o webhook do Discord ligado, a mediana sobe para ~23 ms e o máximo para ~230 ms, por causa da chamada HTTP. O teste de integração exige < 2 s.
 
 **API e dashboard.** Use três terminais, ou `make up` com Docker:
 
