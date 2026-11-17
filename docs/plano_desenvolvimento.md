@@ -224,9 +224,9 @@ Comece o PR 4 cedo: provisionar o Azure (assinatura, F0, termos de IA Responsáv
 
 ## PR 8 — Relatório técnico, demo e hardening
 
-- [ ] `docs/relatorio_tecnico.md` (e PDF): fluxo multimodal, modelos por tipo de dado, datasets, métricas, exemplos reais de anomalias, limitações, LGPD/ética, trabalhos futuros (markdown pronto; falta o PDF)
-- [x] Roteiro do vídeo (≤ 15 min): arquitetura, vídeo, áudio/Azure, vitais/prescrição, fusão e alerta, conclusão (~11 min, em duas partes; em `docs/roteiro_video.md`)
-- [ ] README final: badge do CI, quickstart, link do vídeo (YouTube não listado) (badge e quickstart prontos; falta o link do vídeo)
+- [x] `docs/relatorio_tecnico.md` (e PDF em `docs/relatorio_tecnico.pdf`): fluxo multimodal, modelos por tipo de dado, datasets, métricas, exemplos reais de anomalias, limitações, LGPD/ética, trabalhos futuros
+- [x] Roteiro do vídeo (≤ 15 min): arquitetura, vídeo, áudio/Azure, vitais/prescrição, fusão e alerta, conclusão (~11 min, em duas partes; usado na gravação e retirado do repositório depois, por ser material de trabalho)
+- [x] README final: badge do CI, quickstart, link do vídeo (YouTube não listado)
 - [ ] Clone limpo + `make install && make demo` testado por quem não escreveu o código
 - [ ] Custo Azure verificado e teardown documentado (teardown e limites do F0 no README; conferir a Análise de custo depois da gravação)
 - [ ] Tag `v1.0.0` e release no GitHub

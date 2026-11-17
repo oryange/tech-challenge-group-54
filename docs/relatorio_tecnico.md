@@ -6,7 +6,7 @@ Integrantes: Oryange Strifezze e Larissa Nunes
 
 Repositório: https://github.com/oryange/tech-challenge-group-54
 
-Vídeo de demonstração: _link do YouTube (não listado) a incluir após a gravação_
+Vídeo de demonstração: https://youtu.be/ZtvO0ngn_s8 (YouTube, não listado)
 
 ## 1. Resumo
 
